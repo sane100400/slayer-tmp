@@ -144,7 +144,7 @@ ScanResult  { rules[], violations[], pass_count, fail_count, deployable }
 PatchResult { patched_files[], diffs{}, remaining_violations[], deployable, ai_used }
 ```
 
-`rule_type`: `NO_NETWORK | NO_EXEC | NO_HARDCODED_SECRETS | SQL_PARAM_BINDING | NO_DEBUG_MODE | NO_INSECURE_HASH | NO_BARE_EXCEPT | CUSTOM`
+`rule_type`: `NO_NETWORK | NO_EXEC | NO_HARDCODED_SECRETS | SQL_PARAM_BINDING | NO_DEBUG_MODE | NO_WEAK_RANDOM | NO_BARE_EXCEPT | CUSTOM`
 
 ---
 

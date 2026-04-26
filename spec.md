@@ -334,19 +334,19 @@ slayer patch <path>
 ### text 형식 (기본)
 
 ```
-$ slayer scan demo_vuln.py --ci
+$ slayer start demo_vuln.py | cat
 
   SLAyer  Scanning demo_vuln.py
 
   ✗  NO_NETWORK        line 9    requests.get(...)
   ✗  NO_HARDCODED      line 5    API_KEY = "sk-prod-..."
-  ✗  SQL_PARAM_BINDING line 13   f"SELECT * WHERE name='{query}'"
-  ✗  NO_EXEC           line 17   subprocess.run(shell=True)
+  ✗  SQL_PARAM_BINDING line 13   f"SELECT * FROM users WHERE name='{query}'"
+  ✗  NO_EXEC           line 17   subprocess.run(..., shell=True)
 
   Result  4 violations · 🔒 Deployment BLOCKED
 ```
 
-### json 형식 (--format json --ci)
+### json 형식 (--format json)
 
 ```json
 {
