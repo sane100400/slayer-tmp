@@ -512,30 +512,87 @@ PARSE_PROMPT = """
 
 ## 9. LLM Patcher (`patcher/llm_patcher.py`)
 
-AI CLI에 파일 내용 + 위반 목록을 전달해 수정된 전체 코드를 수신.
+AI CLI에 파일 내용 + **SLAyer가 탐지한 위반 목록**을 전달해 수정된 전체 코드를 수신.
+
+### 핵심 원칙: SLAyer-scoped patch
+
+> **AI는 SLAyer가 탐지한 violation만 수정한다. 그 외 코드는 한 글자도 바꾸지 않는다.**
+
+AI CLI에 위반 목록(`violations_json`)을 명시적으로 전달하고, 프롬프트에 "위반 목록에 없는 코드는 변경 금지"를 강제한다. 이 범위 제한이 없으면 AI가 스타일 변경, 리팩토링, 로직 변경 등 의도하지 않은 수정을 할 수 있다.
 
 ```python
 PATCH_PROMPT = """
-다음 Python 코드의 보안 위반을 수정하세요.
+다음 {language} 코드에서 아래 위반 목록에 해당하는 보안 취약점만 수정하세요.
 수정된 전체 코드만 반환하세요 (설명, 마크다운 없이).
 
-위반 목록:
+**중요**: 위반 목록에 없는 코드는 절대 변경하지 마세요.
+변수명, 로직, 주석, 포맷 등 보안 위반과 무관한 부분은 원본 그대로 유지하세요.
+
+위반 목록 (이것만 수정):
 {violations_json}
 
-수정 지침:
-- NO_HARDCODED_SECRETS: os.environ.get("VAR_NAME", "")로 교체 (import os 추가)
-- NO_NETWORK: raise NotImplementedError("외부 호출이 차단됨")
-- NO_EXEC: shell=True → shell=False + 인수 리스트 변환
-- SQL_PARAM_BINDING: 파라미터 바인딩으로 교체
-- NO_DEBUG_MODE: os.environ.get("DEBUG","false").lower()=="true"로 교체
-- NO_WEAK_RANDOM: secrets.token_hex(32) 또는 secrets.choice(...)
-- NO_BARE_EXCEPT: except Exception as e: logger.warning(e)
-- 위반 없는 코드는 한 글자도 변경하지 말 것
+각 위반의 file, line, rule_id를 기준으로 해당 위치만 수정하세요.
 
-코드:
+수정 지침 (rule_id별, Python / JS·TS):
+- NO_HARDCODED_SECRETS:
+    Python: `os.environ.get("VAR_NAME", "")` (import os 추가)
+    JS/TS:  `process.env.VAR_NAME ?? ""`
+- NO_NETWORK:
+    Python: `raise NotImplementedError("외부 호출이 차단됨")`
+    JS/TS:  `throw new Error("외부 호출이 차단됨")`
+- NO_EXEC:
+    Python: `shell=True` → `shell=False`, 명령어 문자열 → `["cmd", "arg"]` 리스트
+    JS/TS:  `exec("cmd arg")` → `execFile("cmd", ["arg"], callback)`
+- SQL_PARAM_BINDING:
+    Python sqlite3/psycopg2: `cursor.execute("SELECT ... WHERE x = ?", (val,))`
+    Python SQLAlchemy:       `text("SELECT ... WHERE x = :x").bindparams(x=val)`
+    JS/TS (pg):              `client.query("SELECT ... WHERE x = $1", [val])`
+    JS/TS (mysql2):          `connection.execute("SELECT ... WHERE x = ?", [val])`
+- NO_DEBUG_MODE:
+    Python: `os.environ.get("DEBUG", "false").lower() == "true"`
+    JS/TS:  `process.env.NODE_ENV !== "production"` 또는 `process.env.DEBUG === "true"`
+- NO_WEAK_RANDOM:
+    Python: `secrets.token_hex(32)` 또는 `secrets.choice(alphabet)`
+    JS/TS:  `crypto.randomUUID()` 또는 `crypto.getRandomValues(new Uint8Array(32))`
+- NO_BARE_EXCEPT:
+    Python: `except Exception as e: logger.warning("Unexpected error: %s", e)`
+    JS/TS:  `catch (e) {{ console.error("Unexpected error:", e); }}`
+
+원본 코드:
 {code}
 """
 ```
+
+### 입력/출력
+
+| 항목 | 내용 |
+|------|------|
+| 입력 | `code` (파일 전체), `violations_json` (SLAyer 탐지 결과만), `language` (py/js/ts) |
+| 출력 | 수정된 전체 코드 (코드블록 있으면 추출, 없으면 stdout 전체) |
+| 검증 | 언어별 구문 검사 후 실패 시 원본 자동 복원 |
+| 범위 보장 | 패치 후 diff 생성 → 수정 라인이 violation line ±5 범위 외이면 "Unexpected change detected" 경고 |
+
+### 언어별 구문 검증
+
+| 언어 | 검증 수단 | 실패 시 |
+|------|---------|---------|
+| Python (`.py`) | `ast.parse(patched_code)` | 원본 복원 + "Patch failed: syntax error" |
+| JS/TS (`.js/.jsx/.ts/.tsx`) | `node --check <tempfile>` (Node.js 내장 구문 검사, npm 패키지 불필요) | 원본 복원 + "Patch failed: syntax error" |
+
+> `node --check`는 Node.js 내장 플래그로 파일을 실행하지 않고 구문만 파싱한다.  
+> node가 설치되어 있지 않은 환경(fallback): diff 변경 라인 수 > 원본 × 0.2 초과 시 거부.  
+> 두 경우 모두 실패 시 동일한 rollback 절차 적용.
+
+### 원본 복원 (rollback) 전략
+
+패치 시작 전 `original = path.read_text()`로 원본을 메모리에 보관.  
+아래 조건 중 하나라도 해당하면 즉시 `path.write_text(original)` 복원:
+1. AI CLI exit code ≠ 0
+2. Python: `ast.parse()` 실패
+3. JS/TS: diff 변경 라인 수 > 원본 라인 수 × 0.2
+4. 타임아웃 (60초)
+
+복원 후 `PatchResult.deployable = False`, `remaining_violations` = 원래 위반 목록 반환.
 
 패치 후 AST Analyzer 재실행으로 remaining_violations 확인.
 
