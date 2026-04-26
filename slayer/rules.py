@@ -62,13 +62,13 @@ DEFAULT_RULES: tuple[SLARule, ...] = (
 )
 
 RULE_GUIDANCE: dict[str, str] = {
-    "NO_HARDCODED_SECRETS": '환경 변수 조회로 바꾸고 실제 비밀값은 복원하지 마세요.',
-    "NO_NETWORK": '사용자 입력 URL을 직접 호출하지 말고 차단하거나 허용 목록/고정 엔드포인트로 바꾸세요.',
-    "NO_EXEC": '쉘 문자열 실행을 제거하고 안전한 인수 리스트 또는 차단 동작으로 바꾸세요.',
-    "SQL_PARAM_BINDING": '문자열 보간 SQL을 파라미터 바인딩으로 바꾸세요.',
-    "NO_DEBUG_MODE": '하드코딩된 debug/DEBUG true를 환경 변수 기반 설정으로 바꾸세요.',
-    "NO_WEAK_RANDOM": '보안 토큰/세션/OTP 생성에는 secrets 또는 crypto 기반 API를 사용하세요.',
-    "NO_BARE_EXCEPT": '빈 except/catch를 구체적인 예외 처리와 로깅으로 바꾸세요.',
+    "NO_HARDCODED_SECRETS": 'Replace the secret with an environment variable lookup. Do not put the real value back in the code.',
+    "NO_NETWORK": 'Do not call user-supplied URLs directly. Use an allow-list of trusted domains or a fixed endpoint.',
+    "NO_EXEC": 'Remove the shell string execution. Use a safe argument list (shell=False) or block the operation.',
+    "SQL_PARAM_BINDING": 'Replace string-interpolated SQL with parameterized queries (placeholders + bound values).',
+    "NO_DEBUG_MODE": 'Replace the hardcoded debug=True with an environment variable check.',
+    "NO_WEAK_RANDOM": 'Use the secrets or crypto module for tokens, sessions, and OTPs instead of the math random functions.',
+    "NO_BARE_EXCEPT": 'Replace the empty except/catch with specific error handling and a log statement.',
 }
 
 DEFAULT_RULES_BY_ID = {rule.id: rule for rule in DEFAULT_RULES}
@@ -77,52 +77,52 @@ DEFAULT_RULES_BY_ID = {rule.id: rule for rule in DEFAULT_RULES}
 RULE_DETAILS: dict[str, dict[str, str]] = {
     "NO_HARDCODED_SECRETS": {
         "why": (
-            "API 키·비밀번호가 코드에 있으면 git push 한 순간 전 세계에 노출됩니다.\n"
-            "  GitGuardian 통계: 노출 후 평균 3분 내 봇이 수집합니다."
+            "Putting a password or API key in your code is like taping your house key to the front door.\n"
+            "  Bots scan GitHub and steal exposed secrets in under 3 minutes (GitGuardian)."
         ),
-        "fix": "os.environ.get('API_KEY', '') 또는 python-dotenv / process.env.API_KEY 로 교체하세요.",
+        "fix": "Use os.environ.get('API_KEY') or process.env.API_KEY — keep secrets out of the code.",
     },
     "NO_EXEC": {
         "why": (
-            "shell=True 는 명령어 문자열을 sh -c 로 해석합니다.\n"
-            "  세미콜론 하나로 서버 전체 명령 실행이 가능합니다. (CVSS 9.8 / RCE)"
+            "Running a shell command as a string lets an attacker sneak in extra commands with a semicolon.\n"
+            "  One bad input → full server takeover. (CVSS 9.8 / Remote Code Execution)"
         ),
-        "fix": "subprocess.run(['cmd', arg], shell=False) — 인수 리스트로 교체하세요.",
+        "fix": "Use subprocess.run(['cmd', arg], shell=False) — pass arguments as a list, never a string.",
     },
     "SQL_PARAM_BINDING": {
         "why": (
-            "f\"SELECT ... '{name}'\" 에서 name='; DROP TABLE users;--' 을 입력하면\n"
-            "  DB 전체가 삭제됩니다. (OWASP A03 SQL Injection)"
+            "Putting user input inside a SQL string lets attackers type '; DROP TABLE users;--\n"
+            "  and delete your entire database. (OWASP #3 — SQL Injection)"
         ),
-        "fix": "cursor.execute('SELECT ... WHERE name=?', (name,)) — 파라미터 바인딩으로 교체하세요.",
+        "fix": "Use cursor.execute('SELECT ... WHERE name=?', (name,)) — let the driver handle quoting.",
     },
     "NO_NETWORK": {
         "why": (
-            "사용자 입력 URL을 그대로 요청하면 내부망(169.254.169.254 등) 조회로\n"
-            "  AWS 자격증명이 탈취됩니다. (SSRF / CWE-918)"
+            "Fetching a URL typed by a user lets attackers hit private servers inside your cloud.\n"
+            "  One request to 169.254.169.254 can steal your AWS credentials. (SSRF)"
         ),
-        "fix": "허용 도메인 목록을 검증하거나 고정 엔드포인트를 사용하세요.",
+        "fix": "Check the URL against an allow-list of trusted domains before making the request.",
     },
     "NO_DEBUG_MODE": {
         "why": (
-            "debug=True 로 배포하면 Flask/Django 인터랙티브 디버거가 활성화되어\n"
-            "  임의 Python 코드를 원격 실행할 수 있습니다. (CWE-16)"
+            "Shipping with debug=True turns on an interactive console anyone on the internet can reach.\n"
+            "  They can run any Python or JS code they want on your server. (CWE-16)"
         ),
-        "fix": "DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true' 로 교체하세요.",
+        "fix": "Use DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true' so it is off by default.",
     },
     "NO_WEAK_RANDOM": {
         "why": (
-            "random.random()은 메르센 트위스터 기반으로, 출력 값에서 내부 상태를\n"
-            "  역산해 OTP·토큰을 예측할 수 있습니다. (CWE-330)"
+            "Math.random() and random.random() are guessable — like rolling a dice with a pattern.\n"
+            "  An attacker can predict your tokens and take over accounts. (CWE-330)"
         ),
-        "fix": "secrets.token_hex(32) 또는 secrets.token_urlsafe() / crypto.randomUUID() 로 교체하세요.",
+        "fix": "Use secrets.token_hex(32) in Python or crypto.randomUUID() in JS for security tokens.",
     },
     "NO_BARE_EXCEPT": {
         "why": (
-            "예외를 비워 삼키면 공격 침입·비정상 데이터가 로그 없이 통과됩니다.\n"
-            "  IBM 보고서: 침해 평균 감지 시간 207일."
+            "An empty catch block hides errors like sweeping dirt under a rug.\n"
+            "  Attacks and crashes go unnoticed — average breach detection time: 207 days (IBM)."
         ),
-        "fix": "except Exception as e: logger.warning('...', exc_info=True) 로 교체하세요.",
+        "fix": "Use except Exception as e: logger.warning(e) so every problem gets logged.",
     },
 }
 
