@@ -3,6 +3,8 @@ logs
 *.log
 
 dist
+node_modules/
+src-tauri/
 
 # Python cache
 **/__pycache__/

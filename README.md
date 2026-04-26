@@ -71,7 +71,7 @@ Importance is evaluated on 5 axes: exploitability (25%) · impact severity (25%)
 | NO_WEAK_RANDOM | 2.91 | high |
 | NO_BARE_EXCEPT | 3.00 | medium |
 
-> Full methodology: [`spec.md § 0.55`](./spec.md)
+> Full methodology: [`spec.md § 0.55`](./docs/spec.md)
 
 ---
 
@@ -276,7 +276,7 @@ Detection runs deterministically without AI. The AI CLI is used for patching onl
 
 ## Related Files
 
-- [`spec.md`](./spec.md) — detailed development specification
+- [`spec.md`](./docs/spec.md) — detailed development specification
 - [`dataset/slayer-bench-v0/`](./dataset/slayer-bench-v0/) — vulnerable/patched/FP-free/blind-spot benchmark
 - [`dataset/ai-bench-v1/`](./dataset/ai-bench-v1/) — AI-generated code benchmark
 - [`presentation.html`](./presentation.html) — presentation slides
