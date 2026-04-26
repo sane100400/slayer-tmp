@@ -76,7 +76,7 @@ def _codex_runner(executable: str, prompt: str, output_file: Path | None = None)
 
 
 def _gemini_runner(executable: str, prompt: str, _: Path | None = None) -> list[str]:
-    return [executable, "--prompt", prompt, "--output-format", "text"]
+    return [executable, "--prompt", prompt]
 
 
 AI_CANDIDATES: tuple[AICandidate, ...] = (

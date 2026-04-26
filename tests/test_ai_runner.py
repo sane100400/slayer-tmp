@@ -35,7 +35,7 @@ def test_cli_runners_use_headless_cross_platform_arguments(tmp_path):
     assert codex[codex.index('--sandbox') + 1] == 'read-only'
     assert codex[codex.index('--output-last-message') + 1] == str(tmp_path / 'last.txt')
     assert codex[-1] == 'patch this'
-    assert gemini == ['gemini', '--prompt', 'patch this', '--output-format', 'text']
+    assert gemini == ['gemini', '--prompt', 'patch this']
 
 
 def test_run_ai_reads_codex_last_message_file(fake_ai_env, monkeypatch, tmp_path):
