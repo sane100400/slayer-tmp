@@ -125,6 +125,22 @@ def print_scan_rich(target: str | Path, result: ScanResult, console: Console | N
         c.print()
 
 
+def _print_diff(diff: str, console: Console) -> None:
+    for line in diff.splitlines():
+        if line.startswith(('--- ', '+++ ')):
+            continue
+        if line.startswith('@@'):
+            console.print(Padding(Text(line, style='cyan dim'), (0, 6)))
+        elif line.startswith('-'):
+            t = Text(f'  {line}', style='red', no_wrap=True)
+            console.print(Padding(t, (0, 4)))
+        elif line.startswith('+'):
+            t = Text(f'  {line}', style='bold green', no_wrap=True)
+            console.print(Padding(t, (0, 4)))
+        else:
+            console.print(Padding(Text(f'  {line}', style='dim', no_wrap=True), (0, 4)))
+
+
 def print_patch_rich(target: str | Path, result: PatchResult, console: Console | None = None) -> None:
     c = console or Console()
 
@@ -146,7 +162,10 @@ def print_patch_rich(target: str | Path, result: PatchResult, console: Console |
         c.print(Padding(f'[yellow]⚠ syntax error[/]  [dim]{loc}[/]  {issue.message}', (0, 2)))
 
     for patched in result.patched_files:
-        c.print(Padding(f'[green]✓[/]  [bold]{patched}[/]  [dim]patched[/]', (0, 2)))
+        c.print(Padding(f'[green]✓[/]  [bold]{Path(patched).name}[/]  [dim]patched[/]', (0, 2)))
+        if patched in result.diffs:
+            _print_diff(result.diffs[patched], c)
+            c.print()
 
     if result.patch_explanations:
         c.print()
@@ -207,7 +226,12 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
     if result.ai_used != 'none':
         lines.append(f'Patching via {result.ai_used}...')
     for patched in result.patched_files:
-        lines.append(f'✓  {patched} patched')
+        lines.append(f'✓  {Path(patched).name} patched')
+        if patched in result.diffs:
+            for dl in result.diffs[patched].splitlines():
+                if not dl.startswith(('--- ', '+++ ')):
+                    lines.append(f'    {dl}')
+            lines.append('')
     if result.patch_explanations:
         lines.append('')
         lines.append('Patch explanations:')
