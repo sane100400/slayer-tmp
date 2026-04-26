@@ -352,9 +352,6 @@ JS_LINE_RULES: list[tuple[str, re.Pattern, str]] = [
      re.compile(r'(fetch|axios\.get|axios\.post|http\.get|https\.get)\s*\(\s*(req\.(query|params|body)|`[^`]*\$\{req\.)', re.I),
      "외부 URL을 사용자 입력으로 — 내부 네트워크 SSRF 공격이 가능해요."),
 
-    ("PROTOTYPE_POLLUTION",
-     re.compile(r'\[[\'"__proto__[\'"]|\[[\'"constructor[\'"]|\[[\'"prototype[\'"]', re.I),
-     "__proto__/constructor 키 접근 — 프로토타입 오염으로 서버 동작이 변경될 수 있어요."),
 ]
 
 
