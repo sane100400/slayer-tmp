@@ -99,13 +99,14 @@ def collect(target: int, output_dir: Path):
     meta_path = output_dir / "_metadata_spaces.jsonl"
 
     # 기존 파일 수 파악 (spaces 수집분 포함 전체 기준)
-    existing = list(output_dir.rglob("*.py"))
+    existing = [f for f in output_dir.rglob("*") if f.suffix in CODE_EXTENSIONS]
     collected = len(existing)
     seen_spaces = set()
     print(f"  기존 수집 파일: {collected}개")
     print(f"\n🎯 목표: {target}개 | 현재: {collected}개\n")
 
-    sdks = ["gradio", "streamlit"]
+    # docker SDK = Next.js/React 등 JS/TS 바이브코딩 앱의 주요 소스
+    sdks = ["gradio", "streamlit", "docker"]
     offset = 0
     batch = 100
 
@@ -174,7 +175,7 @@ def collect(target: int, output_dir: Path):
                     print(f"  ✓ {space_id}: {saved}개 저장 (총 {collected}/{target})")
 
         offset += batch
-        if offset > 3000:
+        if offset > 50000:
             print("offset 한계 도달. 종료.")
             break
 
