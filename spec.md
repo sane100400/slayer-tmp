@@ -1,4 +1,4 @@
-# SLAyer — 개발 명세서 v5 (AI CLI Edition)
+# SLAyer — 개발 명세서 v6 (Web-Specialized Edition)
 
 > 트랙: Developer Tooling | CMUX x AIM | 2026-04-26
 
@@ -6,7 +6,7 @@
 
 ## 0. 핵심 한 줄
 
-**바이브코딩으로 생성된 Python 코드에서 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI(Claude Code / Codex / Gemini)로 자동 패치 후 배포 게이트를 여는 TUI 도구.**
+**바이브코딩으로 생성된 웹서비스 코드(Python · JS · TS)에서 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI(Claude Code / Codex / Gemini)로 자동 패치 후 배포 게이트를 여는 TUI 도구.**
 
 ```bash
 pip install slayer-sec   # 설치
@@ -14,6 +14,7 @@ slayer start .           # 스캔 TUI 실행
 slayer patch .           # 위반 자동 패치 → 🚀 Deployment Approved
 ```
 
+**지원 언어**: Python (`.py`) · JavaScript (`.js`, `.jsx`) · TypeScript (`.ts`, `.tsx`)
 **타겟 사용자**: Claude Code / Codex / Gemini CLI 중 하나가 이미 설치된 바이브코더.
 
 **"SLAyer 설정 제로"의 의미**:
@@ -70,29 +71,29 @@ AI 코드 생성 도구로 작성된 Python 코드에서 **반복적으로 등�
 | 개발 예제 그대로 배포 | `DEBUG=True`, 하드코딩 크레덴셜을 교체 안 함 |
 | 에러 제거 요청 | `except: pass` — "에러 없애줘" 프롬프트 결과 |
 
-### Vibe Coding Ruleset (7종)
+### Vibe Coding Ruleset (7종) — Python · JS · TS 공통
 
-| ID | Rule Type | 탐지 패턴 | Severity | 바이브 원인 |
-|----|-----------|----------|----------|------------|
-| V-01 | NO_HARDCODED_SECRETS | API 키·패스워드 리터럴 할당 | critical | "일단 예시로" 생성 |
-| V-02 | NO_NETWORK | 네트워크 라이브러리 임포트 + 메서드 호출 | critical | 기능 구현 집중 |
-| V-03 | NO_EXEC | 쉘 실행 함수 + `shell=True` | critical | "편하게 동작하게" 프롬프트 |
-| V-04 | SQL_PARAM_BINDING | f-string/포맷 + SQL 키워드 | high | 오래된 튜토리얼 패턴 |
-| V-05 | NO_DEBUG_MODE | `DEBUG=True`, `debug=True`, `app.run(debug=True)` | high | 개발 예제 그대로 배포 |
-| V-06 | NO_WEAK_RANDOM | `random.random/randint/choice` in security context | high | 보안 컨텍스트에 비암호학적 난수 사용 |
-| V-07 | NO_BARE_EXCEPT | `except:` 또는 `except Exception: pass` | medium | "에러 없애줘" 프롬프트 |
+| ID | Rule Type | Python 탐지 패턴 | JS/TS 탐지 패턴 | Severity |
+|----|-----------|----------------|----------------|----------|
+| V-01 | NO_HARDCODED_SECRETS | `API_KEY = "sk-..."` | `const API_KEY = "sk-..."` | critical |
+| V-02 | NO_NETWORK | `requests.get(url)` (검증 없음) | `fetch(url)` / `axios.get(url)` (검증 없음) | critical |
+| V-03 | NO_EXEC | `subprocess.run(cmd, shell=True)` | `child_process.exec(cmd)` (문자열) | critical |
+| V-04 | SQL_PARAM_BINDING | `` f"SELECT ... {x}" `` | `` `SELECT ... ${x}` `` (템플릿 리터럴) | high |
+| V-05 | NO_DEBUG_MODE | `DEBUG = True` / `app.run(debug=True)` | `debug: true` / `NODE_ENV !== 'production'` | high |
+| V-06 | NO_WEAK_RANDOM | `random.random()` in security context | `Math.random()` in security context | high |
+| V-07 | NO_BARE_EXCEPT | `except: pass` | `catch {}` / `catch (e) {}` (빈 블록) | medium |
 
 ### 패치 전략 (실제 동작하는 코드로 교체)
 
-| Rule | 기존 패턴 | 패치 결과 |
-|------|---------|----------|
-| NO_HARDCODED_SECRETS | `API_KEY = "sk-..."` | `os.environ.get("API_KEY", "")` |
-| NO_NETWORK | `requests.get(...)` | `raise NotImplementedError("외부 호출 차단")` |
-| NO_EXEC | `subprocess.run(cmd, shell=True)` | `subprocess.run(["cmd", arg], shell=False)` |
-| SQL_PARAM_BINDING | `f"SELECT ... '{x}'"` | `cursor.execute("SELECT ... ?", (x,))` |
-| NO_DEBUG_MODE | `DEBUG = True` | `os.environ.get("DEBUG","false").lower()=="true"` |
-| NO_WEAK_RANDOM | `random.choice(token)` | `secrets.token_hex(32)` or `secrets.choice(...)` |
-| NO_BARE_EXCEPT | `except: pass` | `except Exception as e: logger.warning(e)` |
+| Rule | Python 패치 | JS/TS 패치 |
+|------|------------|-----------|
+| NO_HARDCODED_SECRETS | `os.environ.get("API_KEY", "")` | `process.env.API_KEY ?? ""` |
+| NO_NETWORK | `raise NotImplementedError("외부 호출 차단")` | `throw new Error("외부 호출 차단")` |
+| NO_EXEC | `subprocess.run(["cmd", arg], shell=False)` | `execFile("cmd", [arg])` |
+| SQL_PARAM_BINDING | `cursor.execute("SELECT ... ?", (x,))` | `db.query("SELECT ... ?", [x])` |
+| NO_DEBUG_MODE | `os.environ.get("DEBUG","false").lower()=="true"` | `process.env.NODE_ENV === 'development'` |
+| NO_WEAK_RANDOM | `secrets.token_hex(32)` | `crypto.randomUUID()` / `crypto.getRandomValues()` |
+| NO_BARE_EXCEPT | `except Exception as e: logger.warning(e)` | `catch (e) { console.error(e); }` |
 
 ---
 
@@ -104,7 +105,7 @@ AI 호출은 직접 API 대신 **설치된 AI CLI에 위임** (인증 불필요)
 ```
 slayer/
 ├── slayer/
-│   ├── cli.py              # entry point (slayer scan / init)
+│   ├── cli.py              # entry point (slayer start / patch)
 │   ├── tui/
 │   │   ├── app.py          # Textual App — SLayerTUI
 │   │   ├── screens/
@@ -114,15 +115,18 @@ slayer/
 │   │       ├── violation_panel.py  # 오른쪽 상단: 위반 목록
 │   │       └── code_viewer.py      # 오른쪽 하단: 코드 뷰어
 │   ├── models.py           # Pydantic: SLARule, Violation, ScanResult, PatchResult
-│   ├── ai_runner.py        # AI CLI 감지 및 프롬프트 위임 (핵심 신규)
+│   ├── ai_runner.py        # AI CLI 감지 및 프롬프트 위임
 │   ├── config.py           # .slayer.yml 로딩
 │   ├── analyzers/
-│   │   ├── ast_analyzer.py  # 결정적 AST 분석 (AI 불필요)
+│   │   ├── base_analyzer.py # 공통 인터페이스
+│   │   ├── py_analyzer.py   # Python AST 분석 (AI 불필요)
+│   │   ├── js_analyzer.py   # JS/TS regex 분석 (AI 불필요)
 │   │   └── llm_analyzer.py  # CUSTOM 룰 시맨틱 분석 (AI CLI 위임)
 │   └── patcher/
-│       └── llm_patcher.py   # 자동 패치 (AI CLI 위임)
+│       └── llm_patcher.py   # 자동 패치 (AI CLI 위임, 언어 자동 감지)
 ├── pyproject.toml           # entry_point: slayer = slayer.cli:app
-├── demo_vuln.py
+├── demo_vuln.py             # Python 데모
+├── demo_vuln.js             # JS 데모
 └── spec.md
 ```
 
@@ -240,14 +244,14 @@ slayer patch <path>
 --format [text|json]   출력 형식 (기본: text)
 ```
 
-**기본 룰 (자동 적용, 설정 불필요)**:
+**기본 룰 (자동 적용, 설정 불필요, .py/.js/.ts/.jsx/.tsx 모두 적용)**:
 1. NO_NETWORK — 외부 네트워크 호출
 2. NO_EXEC — shell 명령어 실행
 3. NO_HARDCODED_SECRETS — 하드코딩 API 키·패스워드
-4. SQL_PARAM_BINDING — SQL 직접 삽입
-5. NO_DEBUG_MODE — DEBUG=True
-6. NO_WEAK_RANDOM — 보안 컨텍스트에서 random 모듈 사용
-7. NO_BARE_EXCEPT — except: pass
+4. SQL_PARAM_BINDING — SQL 직접 삽입 (f-string / 템플릿 리터럴)
+5. NO_DEBUG_MODE — DEBUG=True / debug:true
+6. NO_WEAK_RANDOM — 보안 컨텍스트에서 random/Math.random() 사용
+7. NO_BARE_EXCEPT — except: pass / 빈 catch 블록
 
 ---
 
@@ -407,9 +411,11 @@ class PatchResult(BaseModel):
 
 ---
 
-## 7. AST Analyzer (`analyzers/ast_analyzer.py`)
+## 7. Analyzers (`analyzers/`)
 
-AI 없이 결정적으로 동작. 7개 Vibe Coding 특화 규칙.
+AI 없이 결정적으로 동작. 언어별 분리.
+
+### `py_analyzer.py` — Python AST 기반
 
 ```python
 # NO_NETWORK
@@ -426,28 +432,52 @@ EXEC_MODULE_CALLS = {
 # (1) password/passwd/pwd = "..."
 # (2) api_key/apikey = "..." (8자 이상)
 # (3) secret/token = "..." (8자 이상)
-# (4) sk- 로 시작하는 20자 이상 알파뉴메릭
-# (5) AWS: aws_access_key_id = "A...Z0-9" (16자 이상)
+# (4) sk- 로 시작하는 20자 이상
+# (5) AWS: aws_access_key_id = "..."
 # (6) GitHub PAT: ghp_ 로 시작하는 36자
 
 # SQL_PARAM_BINDING
-# f-string/%-format/.format() + SQL_KEYWORDS r'(?i)\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b'
+# f-string + r'(?i)\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b'
 
 # NO_DEBUG_MODE
 DEBUG_PATTERNS = [
     r'(?i)^DEBUG\s*=\s*True',
-    r'(?i)debug\s*=\s*True',
     r'app\.run\(.*debug\s*=\s*True',
-    r'app\.config\[.DEBUG.\]\s*=\s*True',
 ]
 
-# NO_WEAK_RANDOM
-# random.random / random.randint / random.choice / random.shuffle
-# + 같은 함수 내 token/secret/password/key/auth 변수명 또는 함수명
+# NO_WEAK_RANDOM: random.random/randint/choice + 보안 컨텍스트 함수명
+# NO_BARE_EXCEPT: ast.ExceptHandler.type is None
+```
 
-# NO_BARE_EXCEPT
-# ast.ExceptHandler.type is None
-# 또는 ExceptHandler.type = Exception + body[0] = Pass
+### `js_analyzer.py` — JS/TS Regex 기반
+
+```python
+# 대상 확장자: .js .jsx .ts .tsx
+
+# NO_HARDCODED_SECRETS — Python과 동일 정규식 + JS 문법
+SECRET_RE_JS = [
+    re.compile(r'(?i)(?:const|let|var)\s+\w*(password|api_?key|secret|token)\w*\s*=\s*["\'][^"\']{8,}["\']'),
+    re.compile(r'sk-[A-Za-z0-9]{20,}'),
+    re.compile(r'ghp_[A-Za-z0-9]{36}'),
+]
+
+# NO_NETWORK: fetch( / axios.get( / axios.post( 등
+NETWORK_RE_JS = re.compile(r'\b(fetch|axios\.(get|post|put|delete|patch)|http\.(get|post))\s*\(')
+
+# NO_EXEC: child_process.exec / execSync / spawnSync 문자열 인수
+EXEC_RE_JS = re.compile(r'\b(exec|execSync|spawnSync)\s*\(\s*[`"\']')
+
+# SQL_PARAM_BINDING: 템플릿 리터럴 + SQL 키워드
+SQL_RE_JS = re.compile(r'`[^`]*(SELECT|INSERT|UPDATE|DELETE|DROP)[^`]*\$\{')
+
+# NO_DEBUG_MODE
+DEBUG_RE_JS = re.compile(r'(?i)(debug\s*:\s*true|NODE_ENV\s*!==?\s*["\']production["\'])')
+
+# NO_WEAK_RANDOM: Math.random() + 보안 컨텍스트
+WEAK_RANDOM_RE_JS = re.compile(r'Math\.random\s*\(\s*\)')
+
+# NO_BARE_EXCEPT: catch\s*(\w*)?\s*\{\s*\}  (빈 catch 블록)
+BARE_CATCH_RE_JS = re.compile(r'catch\s*\([^)]*\)\s*\{\s*\}')
 ```
 
 ---

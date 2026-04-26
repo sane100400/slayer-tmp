@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **SLAyer** — CMUX x AIM 해커톤 | Developer Tooling 트랙 | 2026-04-26
 
-바이브코딩으로 생성된 Python 코드에서 **7종 보안 취약 패턴**을 AST 기반으로 탐지하고, 이미 설치된 **AI CLI(Claude Code / Codex / Gemini)** 로 자동 패치 후 배포 게이트를 여는 TUI 도구.
+바이브코딩으로 생성된 **웹서비스 코드(Python · JS · TS)** 에서 **7종 보안 취약 패턴**을 탐지하고, 이미 설치된 **AI CLI(Claude Code / Codex / Gemini)** 로 자동 패치 후 배포 게이트를 여는 TUI 도구.
 
 `pip install slayer-sec` 한 줄로 설치. API 키 설정 없음.
 
@@ -35,12 +35,15 @@ slayer/
 │   ├── ai_runner.py        # AI CLI 감지 (claude→codex→gemini) + 프롬프트 위임
 │   ├── config.py           # .slayer.yml 로딩
 │   ├── analyzers/
-│   │   ├── ast_analyzer.py  # 결정적 AST 분석 (AI 불필요)
+│   │   ├── base_analyzer.py # 공통 인터페이스
+│   │   ├── py_analyzer.py   # Python AST 분석 (AI 불필요)
+│   │   ├── js_analyzer.py   # JS/TS regex 분석 (AI 불필요)
 │   │   └── llm_analyzer.py  # CUSTOM 룰 시맨틱 분석 (AI CLI 위임)
 │   └── patcher/
-│       └── llm_patcher.py   # 자동 패치 (AI CLI 위임)
+│       └── llm_patcher.py   # 자동 패치 (AI CLI 위임, 언어 자동 감지)
 ├── pyproject.toml
-├── demo_vuln.py
+├── demo_vuln.py             # Python 데모
+├── demo_vuln.js             # JS 데모
 └── spec.md
 ```
 
@@ -76,8 +79,8 @@ slayer/
 
 ## Key Constraints
 
-- 분석 대상: Python (`.py`) 파일만 (v1 scope)
-- **AST 7종은 AI 없이 동작**: NO_NETWORK, NO_EXEC, NO_HARDCODED_SECRETS, SQL_PARAM_BINDING, NO_DEBUG_MODE, NO_INSECURE_HASH, NO_BARE_EXCEPT
+- 분석 대상: 웹서비스 코드 — `.py` · `.js` · `.jsx` · `.ts` · `.tsx`
+- **탐지 7종은 AI 없이 동작**: Python=AST 기반, JS/TS=regex 기반
 - **AI CLI 필요 작업**: CUSTOM 룰 분석, 자동 패치
 - **AI CLI 감지 순서**: `claude` → `codex` → `gemini` (설치된 첫 번째 사용)
 - API 키 관리 코드 없음 — AI CLI의 기존 인증 사용
@@ -156,11 +159,12 @@ PatchResult { patched_files[], diffs{}, remaining_violations[], deployable, ai_u
 | V-03 | NO_EXEC | 쉘 실행 함수 + `shell=True` 패턴 | critical |
 | V-04 | SQL_PARAM_BINDING | f-string/%-format/.format() + SQL 키워드 | high |
 | V-05 | NO_DEBUG_MODE | `DEBUG=True` / `app.run(debug=True)` | high |
-| V-06 | NO_INSECURE_HASH | `hashlib.md5/sha1` + 패스워드 컨텍스트 | high |
+| V-06 | NO_WEAK_RANDOM | `random.random()` / `Math.random()` in security context | high |
 | V-07 | NO_BARE_EXCEPT | `except: pass` / `except Exception: pass` | medium |
 
-패치 전략 — 실제 동작하는 코드로 교체:
-- NO_EXEC `shell=True` → `shell=False` + 인수 리스트
-- NO_DEBUG_MODE → `os.environ.get("DEBUG", "false").lower() == "true"`
-- NO_INSECURE_HASH → `hashlib.pbkdf2_hmac("sha256", ...)`
-- NO_BARE_EXCEPT → `except Exception as e: logger.warning(...)`
+패치 전략 — AI CLI가 언어 자동 감지 후 실제 동작하는 코드로 교체:
+- Python NO_EXEC: `shell=False` + 인수 리스트
+- JS NO_EXEC: `execFile("cmd", [arg])` 로 교체
+- NO_DEBUG_MODE: Python → `os.environ.get(...)`, JS → `process.env.NODE_ENV`
+- NO_WEAK_RANDOM: Python → `secrets.token_hex()`, JS → `crypto.randomUUID()`
+- NO_BARE_EXCEPT: Python → `except Exception as e:`, JS → `catch (e) { console.error(e); }`

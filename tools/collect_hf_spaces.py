@@ -1,8 +1,10 @@
 """
-HuggingFace Spaces 바이브코딩 Python 수집기
+HuggingFace Spaces 바이브코딩 웹서비스 수집기
 
 Gradio/Streamlit Space = AI 도구로 빌드된 직접 증거.
-각 Space의 .py 파일을 다운로드해 dataset/ 폴더에 저장.
+각 Space의 .py / .js / .ts / .jsx / .tsx 파일을 다운로드해 dataset/ 폴더에 저장.
+
+웹서비스 특화: Python + JS/TS 모두 수집.
 
 사용법:
   python tools/collect_hf_spaces.py
@@ -20,10 +22,15 @@ from pathlib import Path
 HF_API = "https://huggingface.co/api"
 HF_RAW = "https://huggingface.co/spaces/{space_id}/raw/main/{path}"
 
-WEB_KEYWORDS = {
+WEB_KEYWORDS_PY = {
     "gradio", "streamlit", "flask", "fastapi", "django",
     "requests", "uvicorn", "starlette", "tornado", "aiohttp",
 }
+WEB_KEYWORDS_JS = {
+    "express", "fastify", "next", "nuxt", "axios", "fetch",
+    "react", "vue", "angular", "koa", "hapi", "nestjs",
+}
+CODE_EXTENSIONS = {".py", ".js", ".ts", ".jsx", ".tsx"}
 
 HEADERS = {"User-Agent": "slayer-dataset-collector/1.0"}
 
@@ -71,17 +78,20 @@ def list_spaces_page(sdk: str, limit: int = 100, offset: int = 0) -> list[dict]:
     return []
 
 
-def get_py_files(space_id: str) -> list[str]:
-    """Space 내 .py 파일 목록 반환."""
+def get_web_files(space_id: str) -> list[str]:
+    """Space 내 웹서비스 코드 파일 목록 반환 (.py/.js/.ts/.jsx/.tsx)."""
     data = api_get(f"{HF_API}/spaces/{space_id}")
     siblings = data.get("siblings", [])
     return [f["rfilename"] for f in siblings
-            if isinstance(f, dict) and f.get("rfilename", "").endswith(".py")]
+            if isinstance(f, dict)
+            and any(f.get("rfilename", "").endswith(ext) for ext in CODE_EXTENSIONS)]
 
 
-def is_web_service(content: str) -> bool:
+def is_web_service(content: str, ext: str = ".py") -> bool:
     lower = content.lower()
-    return any(kw in lower for kw in WEB_KEYWORDS)
+    if ext in (".js", ".ts", ".jsx", ".tsx"):
+        return any(kw in lower for kw in WEB_KEYWORDS_JS | WEB_KEYWORDS_PY)
+    return any(kw in lower for kw in WEB_KEYWORDS_PY)
 
 
 def collect(target: int, output_dir: Path):
@@ -122,18 +132,19 @@ def collect(target: int, output_dir: Path):
                 seen_spaces.add(space_id)
 
                 print(f"  📦 {space_id} ...", end="\r")
-                py_files = get_py_files(space_id)
+                web_files = get_web_files(space_id)
                 time.sleep(0.3)
 
                 saved = 0
-                for path in py_files[:15]:  # space당 최대 15개
+                for path in web_files[:20]:  # space당 최대 20개
                     if collected >= target:
                         break
 
+                    ext = Path(path).suffix.lower()
                     content = download_raw(space_id, path)
                     if not content or len(content) < 100:
                         continue
-                    if not is_web_service(content):
+                    if not is_web_service(content, ext):
                         continue
 
                     safe_name = re.sub(
@@ -148,6 +159,7 @@ def collect(target: int, output_dir: Path):
                             "file": out_path.name,
                             "space": space_id,
                             "path": path,
+                            "lang": ext.lstrip("."),
                             "size": len(content),
                             "sdk": sdk,
                             "likes": space.get("likes", 0),
