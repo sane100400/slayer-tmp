@@ -1,45 +1,49 @@
 # Dataset mapping and access-mode review
 
-This document describes how SLAyer's dataset fixtures currently flow into runtime artifacts, which datasets feed `slayer start` vs `slayer patch` vs evaluator-only paths, and where future remote/local/manual adapters should attach.
+This document states **which datasets feed `slayer start`**, **which feed `slayer patch`**, which remain evaluator/reference-only, and how each dataset enters the pipeline through `fixture | remote | local | manual` ingestion modes.
 
-## 1. Current implemented pipeline
+## 1. Runtime flow overview
 
-The current repository implements a **fixture-first** dataset pipeline:
+```text
+dataset source
+  -> fetch/import adapter (fixture | remote | local | manual)
+  -> dataset/sources/raw/<dataset>/raw.json
+  -> dataset-specific normalizer adapter
+  -> dataset/sources/normalized/<dataset>.jsonl
+  -> miners
+      - mine_secret_patterns.py
+      - mine_scanner_patterns.py
+      - mine_patch_examples.py
+  -> slayer/runtime_artifacts/<version>/
+  -> slayer start / slayer patch
+```
 
-1. Bundled fixture JSON lives in `tools/datasets/fixtures/<dataset>.json`.
-2. `python3 tools/datasets/fetch_dataset.py --dataset ...` copies the bundled fixture into `dataset/sources/raw/<dataset>/raw.json`.
-3. `python3 tools/datasets/normalize_dataset.py --dataset ...` converts that raw payload into `dataset/sources/normalized/<dataset>.jsonl`.
-4. `python3 tools/build_runtime_artifacts.py --version <v>` mines normalized records into `slayer/runtime_artifacts/<v>/`.
-5. `slayer start` and `slayer patch` load the built bundle through `slayer.artifact_store.load_runtime_artifacts()`.
+### Current code touchpoints
 
-### Source-of-truth files
-
-- Dataset registry: `tools/datasets/registry.py`
-- Raw/normalized path helpers: `tools/datasets/common.py`
-- Runtime bundle builder: `tools/build_runtime_artifacts.py`
+- Registry: `tools/datasets/registry.py`
+- Fetch/import adapters: `tools/datasets/adapters.py`
+- Path helpers/cache/checksum: `tools/datasets/common.py`
+- Dataset-specific normalizers: `tools/datasets/normalizers.py`
+- Runtime bundle build: `tools/build_runtime_artifacts.py`
 - Runtime consumers:
   - `slayer/scanner.py`
   - `slayer/patcher/llm_patcher.py`
-- Evaluator fixture loader:
-  - `slayer/eval/fixture_loader.py`
 
-## 2. Which datasets feed which consumer?
+## 2. Which datasets feed `slayer start`?
 
-### `slayer start` runtime inputs
+`slayer start` consumes the runtime bundle's **secret patterns** and **scanner patterns**.
 
-`slayer start` uses the runtime artifact bundle's secret-pattern and scanner-pattern payloads.
+### Secret-pattern datasets used by `start`
 
-#### Secret-pattern datasets
-
-These feed `tools/mine_secret_patterns.py` and therefore the runtime secret matcher used during scanning:
+These flow through `tools/mine_secret_patterns.py` and strengthen `NO_HARDCODED_SECRETS` detection:
 
 - `creddata`
 - `secretbench`
 - `fpsecretbench`
 
-#### Scanner-pattern datasets
+### Scanner-pattern datasets used by `start`
 
-These feed `tools/mine_scanner_patterns.py` and therefore the runtime scanner overlays used during scanning:
+These flow through `tools/mine_scanner_patterns.py` and contribute scanner overlays / provenance:
 
 - `cvefixes`
 - `primevul`
@@ -47,11 +51,11 @@ These feed `tools/mine_scanner_patterns.py` and therefore the runtime scanner ov
 - `diversevul`
 - `securityeval`
 
-### `slayer patch` runtime inputs
+## 3. Which datasets feed `slayer patch`?
 
-`slayer patch` first reuses the same scan bundle as `slayer start`, then extends the patch prompt with patch recipes and few-shot examples mined by `tools/mine_patch_examples.py`.
+`slayer patch` first reuses the same scan bundle as `start`, then extends the patch prompt with **patch recipes** and **few-shot before/after examples** mined by `tools/mine_patch_examples.py`.
 
-Patch-example datasets:
+Patch recipe / few-shot datasets:
 
 - `cvefixes`
 - `bigvul`
@@ -59,9 +63,9 @@ Patch-example datasets:
 - `vulnpatchpairs`
 - `vulrepair`
 
-### Evaluator-only / provenance-only datasets
+## 4. Which datasets are evaluator-only / reference-only?
 
-These datasets are currently used for benchmark provenance, evaluator documentation, or curated local benchmark cases rather than direct runtime mining defaults:
+These datasets are part of evaluator provenance or curated benchmark coverage, not direct runtime mining defaults:
 
 - `owasp_benchmark`
 - `sard_juliet`
@@ -72,135 +76,88 @@ These datasets are currently used for benchmark provenance, evaluator documentat
 - `susvibes`
 - `patcheval`
 
-### Cross-over datasets
+## 5. Dataset-to-consumer matrix
 
-A few datasets span more than one concern:
-
-- `cvefixes` feeds both scanner-pattern mining and patch-example mining.
-- `securityeval` feeds runtime scanner mining and also appears throughout evaluator provenance / benchmark metadata.
-- `build_runtime_artifacts.py` records all `P1_DATASETS + P2_DATASETS` in `manifest.json` for provenance, even though the mined runtime payloads come from narrower default dataset subsets.
-
-## 3. Dataset-to-consumer matrix
-
-| Dataset | Registry role | Normalizer tag | Feeds `start` | Feeds `patch` | Evaluator/reference only |
+| Dataset | Access mode | Feeds `start` | Feeds `patch` | Evaluator/reference | Runtime use |
 | --- | --- | --- | --- | --- | --- |
-| `cvefixes` | `runtime_scanner_patch` | `generic_vuln` | ✓ | ✓ | — |
-| `bigvul` | `runtime_patch_reference` | `generic_vuln` | — | ✓ | — |
-| `primevul` | `runtime_scanner_reference` | `generic_vuln` | ✓ | — | — |
-| `megavul` | `runtime_scanner_reference` | `generic_vuln` | ✓ | — | — |
-| `diversevul` | `runtime_scanner_reference` | `generic_vuln` | ✓ | — | — |
-| `vul4j` | `runtime_patch_reference` | `generic_patch` | — | ✓ | — |
-| `vulnpatchpairs` | `runtime_patch_reference` | `generic_patch` | — | ✓ | — |
-| `vulrepair` | `runtime_patch_reference` | `generic_patch` | — | ✓ | — |
-| `owasp_benchmark` | `scanner_eval` | `benchmark_meta` | — | — | ✓ |
-| `sard_juliet` | `scanner_eval` | `benchmark_meta` | — | — | ✓ |
-| `codexglue_defect_detection` | `scanner_eval_reference` | `benchmark_meta` | — | — | ✓ |
-| `seccodebench` | `ai_code_eval` | `benchmark_meta` | — | — | ✓ |
-| `aicgseceval` | `ai_code_eval` | `benchmark_meta` | — | — | ✓ |
-| `securevibebench` | `ai_code_eval` | `benchmark_meta` | — | — | ✓ |
-| `susvibes` | `ai_code_eval` | `benchmark_meta` | — | — | ✓ |
-| `securityeval` | `scanner_patch_ai_eval` | `generic_vuln` | ✓ | — | runtime + evaluator provenance |
-| `creddata` | `secret_runtime_eval` | `secret_patterns` | ✓ | — | — |
-| `secretbench` | `secret_runtime_eval` | `secret_patterns` | ✓ | — | — |
-| `fpsecretbench` | `secret_runtime_eval` | `secret_patterns` | ✓ | — | — |
-| `patcheval` | `patch_eval` | `benchmark_meta` | — | — | ✓ |
+| `cvefixes` | `manual` | ✓ | ✓ | ✓ (patch provenance) | Scanner overlays + patch exemplars |
+| `bigvul` | `manual` | — | ✓ | — | Patch exemplar provenance |
+| `primevul` | `manual` | ✓ | — | — | Scanner overlay provenance |
+| `megavul` | `manual` | ✓ | — | — | Scanner overlay provenance |
+| `diversevul` | `manual` | ✓ | — | ✓ (reference) | Additional scanner overlay provenance |
+| `vul4j` | `remote` | — | ✓ | — | Human patch/PoV patch recipes |
+| `vulnpatchpairs` | `remote` | — | ✓ | — | Before/after patch few-shots |
+| `vulrepair` | `remote` | — | ✓ | — | Patch recipe + few-shot provenance |
+| `creddata` | `manual` | ✓ | — | ✓ | Secret regex/provider coverage |
+| `secretbench` | `manual` | ✓ | — | ✓ | Secret regex/provider coverage |
+| `fpsecretbench` | `manual` | ✓ | — | ✓ | Secret false-positive suppression provenance |
+| `securityeval` | `remote` | ✓ | — | ✓ | Scanner overlay provenance + evaluator provenance |
+| `owasp_benchmark` | `remote` | — | — | ✓ | Scanner evaluator provenance |
+| `sard_juliet` | `manual` | — | — | ✓ | Scanner evaluator provenance |
+| `codexglue_defect_detection` | `remote` | — | — | ✓ | Scanner evaluator reference |
+| `seccodebench` | `remote` | — | — | ✓ | AI-code evaluator provenance |
+| `aicgseceval` | `remote` | — | — | ✓ | AI-code evaluator provenance |
+| `securevibebench` | `manual` | — | — | ✓ | AI-code evaluator provenance |
+| `susvibes` | `manual` | — | — | ✓ | AI-code evaluator provenance |
+| `patcheval` | `remote` | — | — | ✓ | Patch evaluator provenance |
 
-## 4. Normalizer design
+## 6. Access-mode meanings
 
-The current normalizer path is intentionally simple:
+### `fixture`
+- deterministic bundled sample payload
+- used for CI/local reproducibility
+- source lives in `tools/datasets/fixtures/*.json`
 
-- `normalize_dataset.py` does **not** dispatch to per-dataset parser modules.
-- Instead, `tools/datasets/registry.py` assigns a `normalizer` tag and `normalize_records()` stamps each record with shared fields such as `dataset_id`, `record_id`, `record_type`, `language`, `rule_id`, and `source_datasets`.
-- In practice, the bundled fixture payloads already carry most dataset-specific shaping, while the normalizer tag acts as a schema/default label:
-  - `generic_vuln`
-  - `generic_patch`
-  - `benchmark_meta`
-  - `secret_patterns`
+### `remote`
+- public upstream URL declared in the registry
+- fetched into `.cache/slayer-datasets/<dataset>/`
+- supports cache reuse, checksum validation, and resume-aware download logic
+- may optionally extract archives into `dataset/sources/raw/<dataset>/extracted/`
 
-### Review note
+### `local`
+- user supplies a local export or snapshot path
+- imported into the common raw-data contract
+- intended for users who already mirrored a dataset locally
 
-This is sufficient for bundled fixtures, but a future live-ingest pipeline will likely need an explicit adapter layer if upstream sources arrive in incompatible raw formats. The stable contract to preserve is:
+### `manual`
+- approval- or policy-gated dataset
+- user drops an approved export into `dataset/sources/manual/`
+  or passes `--source-path`
+- then the normalizer/miner pipeline proceeds normally
 
-- raw source material lands in `dataset/sources/raw/<dataset>/raw.json`
-- normalized records land in `dataset/sources/normalized/<dataset>.jsonl`
-- miners only read normalized JSONL
+## 7. Policy review notes
 
-## 5. Access-mode design review
+- `SecretBench` / `FPSecretBench` are intentionally `manual` because access is gated by researcher contact and data-protection requirements.
+- `CVEfixes`, `PrimeVul`, and `MegaVul` are also `manual` by default because their practical raw-corpus workflows rely on separate exports, tokens, Drive releases, or long-running collection jobs rather than one stable public file URL.
+- Public repo/archive-backed datasets such as `PatchEval`, `AICGSecEval`, `VulRepair`, and `OWASP BenchmarkPython` are modeled as `remote`.
+- `local` is supported by the adapter layer even where no dataset defaults to it; it is there for user-maintained mirrors and offline corpora.
 
-## Implemented today
+## 8. Commands
 
-### 1. Bundled fixture mode
-
-This is the only fully implemented dataset-ingest path today.
-
-- Storage: `tools/datasets/fixtures/*.json`
-- Entry point: `tools/datasets/fetch_dataset.py`
-- Use case: reproducible local builds and CI artifact generation
-- Verification path: `.github/workflows/slayer-eval.yml`
-
-### 2. Curated local benchmark mode
-
-Evaluator fixtures are already stored locally and loaded directly from committed benchmark directories:
-
-- `dataset/slayer-bench-v0/metadata.jsonl`
-- `dataset/ai-bench-v0/metadata.jsonl`
-- Loader: `slayer/eval/fixture_loader.py`
-
-This is effectively the current "manual/curated" path for evaluator data.
-
-## Reviewed boundary for future adapters
-
-The following adapter modes are **not implemented yet**, but the current code shape suggests where they should attach.
-
-### Remote + cache + resume adapter
-
-Recommended contract:
-
-1. Fetch from an upstream remote source into a dataset-specific cache directory.
-2. Support resume/retry at the cache layer rather than inside the normalizer.
-3. Materialize a canonical `dataset/sources/raw/<dataset>/raw.json` payload before calling `normalize_dataset.py`.
-
-Why this boundary fits the current code:
-
-- miners already depend only on normalized JSONL
-- `build_runtime_artifacts.py` is access-mode agnostic once normalization is complete
-- keeping remote state out of the normalizer preserves deterministic fixture tests
-
-### Local import adapter
-
-Recommended contract:
-
-1. Accept a user-supplied local export / snapshot.
-2. Copy or transform it into `dataset/sources/raw/<dataset>/raw.json`.
-3. Reuse the existing normalization + mining pipeline unchanged.
-
-This keeps "where the data came from" separate from "how SLAyer expects normalized records to look".
-
-### Manual import adapter
-
-Recommended contract:
-
-- Use manual import for hand-curated cases that do not map cleanly to an upstream bulk export.
-- If the goal is runtime artifact generation, the manual path should still end in the same raw/normalized contract.
-- If the goal is evaluator coverage, the existing `dataset/slayer-bench-v0` / `dataset/ai-bench-v0` layout is already the right home.
-
-## 6. Practical guidance
-
-- If you want to change which datasets affect `slayer start`, update the defaults in `tools/mine_secret_patterns.py` and/or `tools/mine_scanner_patterns.py`.
-- If you want to change which datasets affect `slayer patch`, update the defaults in `tools/mine_patch_examples.py`.
-- If you want to adjust provenance shown in runtime manifests, update `P1_DATASETS` / `P2_DATASETS` in `tools/datasets/registry.py` and rebuild the bundle.
-- If you add a new access mode, keep the adapter before normalization rather than teaching miners about remote/local/manual source types.
-
-## 7. Branch-health verification checklist
-
-The current CI-equivalent dataset pipeline is:
+Build the current fixture-backed bundle:
 
 ```bash
-python3 tools/datasets/fetch_dataset.py
-python3 tools/datasets/normalize_dataset.py
-python3 tools/build_runtime_artifacts.py --version v1
-pytest -q
-python3 tools/ci_gate.py --artifact-version v1
+python tools/datasets/fetch_dataset.py
+python tools/datasets/normalize_dataset.py
+python tools/build_runtime_artifacts.py --version v1
 ```
 
-That sequence verifies that bundled fixtures still normalize cleanly, the runtime artifact bundle can be rebuilt, and the evaluator gate remains healthy.
+Import a manual-gated dataset export:
+
+```bash
+python tools/datasets/fetch_dataset.py --dataset secretbench --source-path /path/to/secretbench-export.json
+python tools/datasets/normalize_dataset.py --dataset secretbench
+```
+
+Use a remote/public dataset adapter:
+
+```bash
+python tools/datasets/fetch_dataset.py --dataset patcheval
+python tools/datasets/normalize_dataset.py --dataset patcheval
+```
+
+Render the mapping from the registry itself:
+
+```bash
+python tools/datasets/render_mapping.py --output docs/generated-dataset-mapping.md
+```

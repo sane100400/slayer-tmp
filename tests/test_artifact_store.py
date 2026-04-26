@@ -10,4 +10,5 @@ def test_load_runtime_artifacts_default_bundle_exists():
     assert bundle.scanner_patterns
     assert bundle.patch_recipes
     assert bundle.patch_fewshots
+    assert bundle.sources[0].access_mode
     assert artifact_version_dir(DEFAULT_ARTIFACT_VERSION).exists()

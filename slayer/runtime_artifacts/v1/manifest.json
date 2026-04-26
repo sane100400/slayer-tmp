@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-04-26T04:17:17.640685+00:00",
+  "generated_at": "2026-04-26T04:33:18.935604+00:00",
   "sources": [
     {
       "dataset_id": "secretbench",
@@ -11,7 +11,13 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Used for secret regex/provider coverage."
+      "access_mode": "manual",
+      "feeds": [
+        "start",
+        "evaluator"
+      ],
+      "runtime_use": "Secret regex/provider coverage and evaluator provenance.",
+      "notes": "Access requires researcher contact + data protection agreement."
     },
     {
       "dataset_id": "fpsecretbench",
@@ -22,7 +28,13 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Used for placeholder/false-positive suppression patterns."
+      "access_mode": "manual",
+      "feeds": [
+        "start",
+        "evaluator"
+      ],
+      "runtime_use": "Secret false-positive suppression provenance.",
+      "notes": "Treat as manual-gated like SecretBench."
     },
     {
       "dataset_id": "creddata",
@@ -33,7 +45,13 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Used for secret regex/provider coverage."
+      "access_mode": "manual",
+      "feeds": [
+        "start",
+        "evaluator"
+      ],
+      "runtime_use": "Secret regex/provider coverage and evaluator provenance.",
+      "notes": "Treat as manual/local import unless a stable public export is provided."
     },
     {
       "dataset_id": "cvefixes",
@@ -44,7 +62,14 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Used for scanner overlays, patch recipes, and patch evaluation provenance."
+      "access_mode": "manual",
+      "feeds": [
+        "start",
+        "patch",
+        "patch_evaluator"
+      ],
+      "runtime_use": "Scanner overlays and patch exemplars (CVE/fix provenance).",
+      "notes": "Dataset is published separately from the collection code (e.g. Zenodo), so ingestion is manual-gated by default."
     },
     {
       "dataset_id": "primevul",
@@ -54,7 +79,12 @@
         "python",
         "javascript"
       ],
-      "notes": "Used as mined scanner-pattern provenance rather than a direct runtime corpus."
+      "access_mode": "manual",
+      "feeds": [
+        "start"
+      ],
+      "runtime_use": "Scanner overlay provenance only.",
+      "notes": "Latest release is distributed via Drive/metadata bundle; defaults to manual-gated import."
     },
     {
       "dataset_id": "megavul",
@@ -64,7 +94,12 @@
         "python",
         "javascript"
       ],
-      "notes": "Used as mined scanner-pattern provenance rather than a direct runtime corpus."
+      "access_mode": "manual",
+      "feeds": [
+        "start"
+      ],
+      "runtime_use": "Scanner overlay provenance only.",
+      "notes": "Full collection requires GitHub tokens and long-running pipelines; defaults to manual/local import."
     },
     {
       "dataset_id": "bigvul",
@@ -74,7 +109,12 @@
         "python",
         "javascript"
       ],
-      "notes": "Primarily pattern provenance / patch exemplars; target-language mismatch is documented."
+      "access_mode": "manual",
+      "feeds": [
+        "patch"
+      ],
+      "runtime_use": "Patch exemplar provenance only; target-language mismatch is documented.",
+      "notes": "Public repo exists but raw dataset packaging varies; ingestion defaults to manual/local import."
     },
     {
       "dataset_id": "vulrepair",
@@ -85,18 +125,28 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Used for patch recipe phrasing and few-shot structures."
+      "access_mode": "remote",
+      "feeds": [
+        "patch"
+      ],
+      "runtime_use": "Patch recipe and few-shot provenance.",
+      "notes": "Public repo download is automated."
     },
     {
       "dataset_id": "vulnpatchpairs",
       "role": "runtime_patch_reference",
-      "home": "https://github.com/awsm-research/VulnPatchPairs",
+      "home": "https://github.com/niklasrisse/VPP",
       "languages": [
         "python",
         "javascript",
         "typescript"
       ],
-      "notes": "Used to seed before/after patch few-shots."
+      "access_mode": "remote",
+      "feeds": [
+        "patch"
+      ],
+      "runtime_use": "Before/after patch few-shot provenance.",
+      "notes": "Public repo download is automated; normalization adapts VPP metadata to SLAyer records."
     },
     {
       "dataset_id": "vul4j",
@@ -106,17 +156,27 @@
         "java",
         "python"
       ],
-      "notes": "Human patch/PoV reference adapted into language-agnostic patch recipes."
+      "access_mode": "remote",
+      "feeds": [
+        "patch"
+      ],
+      "runtime_use": "Human patch/PoV patch recipe provenance.",
+      "notes": "Repo is publicly clonable; raw repo archive is the automated source."
     },
     {
       "dataset_id": "owasp_benchmark",
       "role": "scanner_eval",
-      "home": "https://owasp.org/www-project-benchmark/",
+      "home": "https://github.com/OWASP-Benchmark/BenchmarkPython",
       "languages": [
         "python",
         "javascript"
       ],
-      "notes": "Bench provenance only; evaluator fixtures remain curated locally."
+      "access_mode": "remote",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "Evaluator provenance only.",
+      "notes": "Public Python benchmark repo download is automated."
     },
     {
       "dataset_id": "sard_juliet",
@@ -126,7 +186,12 @@
         "python",
         "javascript"
       ],
-      "notes": "Bench provenance only; evaluator fixtures remain curated locally."
+      "access_mode": "manual",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "Evaluator provenance only.",
+      "notes": "NIST SARD access is manual; normalize from a user-provided export."
     },
     {
       "dataset_id": "securityeval",
@@ -137,7 +202,14 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Used for scanner/patch/AI benchmark provenance and local fixture seeding."
+      "access_mode": "remote",
+      "feeds": [
+        "start",
+        "patch",
+        "evaluator"
+      ],
+      "runtime_use": "Scanner pattern provenance and evaluator provenance.",
+      "notes": "Public repo download is automated."
     },
     {
       "dataset_id": "patcheval",
@@ -148,7 +220,12 @@
         "javascript",
         "typescript"
       ],
-      "notes": "Patch evaluator provenance for local curated cases."
+      "access_mode": "remote",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "Patch evaluator provenance only.",
+      "notes": "Public repo download is automated."
     },
     {
       "dataset_id": "aicgseceval",
@@ -159,7 +236,12 @@
         "javascript",
         "typescript"
       ],
-      "notes": "AI-code benchmark provenance for curated cases."
+      "access_mode": "remote",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "AI-code evaluator provenance only.",
+      "notes": "Public repo download is automated."
     },
     {
       "dataset_id": "susvibes",
@@ -170,7 +252,12 @@
         "javascript",
         "typescript"
       ],
-      "notes": "AI-code benchmark provenance for curated cases."
+      "access_mode": "manual",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "AI-code evaluator provenance only.",
+      "notes": "Publication/metadata access is public but corpus packaging is not standardized; import is manual-gated."
     },
     {
       "dataset_id": "securevibebench",
@@ -181,18 +268,28 @@
         "javascript",
         "typescript"
       ],
-      "notes": "AI-code benchmark provenance for curated cases."
+      "access_mode": "manual",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "AI-code evaluator provenance only.",
+      "notes": "Repo/distribution may move; defaults to manual-gated import."
     },
     {
       "dataset_id": "seccodebench",
       "role": "ai_code_eval",
-      "home": "https://github.com/eth-sri/SecCodeBench",
+      "home": "https://github.com/alibaba/sec-code-bench",
       "languages": [
         "python",
         "javascript",
         "typescript"
       ],
-      "notes": "AI-code benchmark provenance for curated cases."
+      "access_mode": "remote",
+      "feeds": [
+        "evaluator"
+      ],
+      "runtime_use": "AI-code evaluator provenance only.",
+      "notes": "Public repo download is automated."
     }
   ]
 }

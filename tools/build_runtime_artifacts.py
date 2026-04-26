@@ -20,7 +20,19 @@ def build_bundle(version: str = 'v1') -> RuntimeArtifactBundle:
     secret_payload = mine_secret_patterns()
     scanner_payload = mine_scanner_patterns()
     patch_payload = mine_patch_examples()
-    sources = [ArtifactSource(dataset_id=dataset_id, role=str(DATASET_REGISTRY[dataset_id]['role']), home=str(DATASET_REGISTRY[dataset_id]['home']), languages=list(DATASET_REGISTRY[dataset_id]['languages']), notes=str(DATASET_REGISTRY[dataset_id]['notes'])) for dataset_id in dict.fromkeys(P1_DATASETS + P2_DATASETS)]
+    sources = [
+        ArtifactSource(
+            dataset_id=dataset_id,
+            role=str(DATASET_REGISTRY[dataset_id]['role']),
+            home=str(DATASET_REGISTRY[dataset_id]['home']),
+            languages=list(DATASET_REGISTRY[dataset_id]['languages']),
+            access_mode=str(DATASET_REGISTRY[dataset_id]['access_mode']),
+            feeds=list(DATASET_REGISTRY[dataset_id]['feeds']),
+            runtime_use=str(DATASET_REGISTRY[dataset_id]['runtime_use']),
+            notes=str(DATASET_REGISTRY[dataset_id]['notes']),
+        )
+        for dataset_id in dict.fromkeys(P1_DATASETS + P2_DATASETS)
+    ]
     return RuntimeArtifactBundle(
         version=version,
         generated_at=datetime.now(timezone.utc).isoformat(),

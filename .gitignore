@@ -50,3 +50,5 @@ tools/*_pattern_report.json
 .mypy_cache/
 .ruff_cache/
 build/
+
+.cache/
