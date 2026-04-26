@@ -20,7 +20,7 @@ NETWORK_RE = re.compile(r'\b(fetch|axios\.(?:get|post|put|delete|patch)|http\.(?
 EXEC_RE = re.compile(r'\b(?:child_process\.)?(?:exec|execSync|spawnSync)\s*\(')
 SQL_TEMPLATE_RE = re.compile(r'`[^`]*(SELECT|INSERT|UPDATE|DELETE|DROP)[^`]*\$\{', re.IGNORECASE)
 SQL_CONCAT_RE = re.compile(r'(?i)(SELECT|INSERT|UPDATE|DELETE|DROP).*(?:\+|concat\()')
-DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b|NODE_ENV\s*!==?\s*["\']production["\']')
+DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b')
 WEAK_RANDOM_RE = re.compile(r'Math\.random\s*\(')
 EMPTY_CATCH_RE = re.compile(r'catch\s*\([^)]*\)\s*\{\s*\}', re.MULTILINE)
 SECURITY_CONTEXT_WORDS = ("token", "secret", "password", "session", "otp", "auth", "reset", "csrf")
