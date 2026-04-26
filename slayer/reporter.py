@@ -141,31 +141,32 @@ def _print_diff(diff: str, console: Console) -> None:
             console.print(Padding(Text(f'  {line}', style='dim', no_wrap=True), (0, 4)))
 
 
-def print_patch_rich(target: str | Path, result: PatchResult, console: Console | None = None) -> None:
+def print_patch_rich(target: str | Path, result: PatchResult, console: Console | None = None, *, skip_diffs: bool = False) -> None:
     c = console or Console()
 
-    # ── Header ──────────────────────────────────────────────────────────────
-    header = Text()
-    header.append('  SLAyer', style='bold white')
-    header.append('  ·  ', style='dim')
-    header.append(str(Path(target)), style='cyan')
-    c.print()
-    c.print(header)
-    c.print()
-
-    if result.ai_used != 'none':
-        c.print(Padding(f'[dim]Patching via [bold]{result.ai_used}[/]...[/]', (0, 2)))
+    if not skip_diffs:
+        # ── Header ──────────────────────────────────────────────────────────────
+        header = Text()
+        header.append('  SLAyer', style='bold white')
+        header.append('  ·  ', style='dim')
+        header.append(str(Path(target)), style='cyan')
+        c.print()
+        c.print(header)
         c.print()
 
-    for issue in result.syntax_errors:
-        loc = f'{issue.file}:{issue.line}' if issue.line else issue.file
-        c.print(Padding(f'[yellow]⚠ syntax error[/]  [dim]{loc}[/]  {issue.message}', (0, 2)))
-
-    for patched in result.patched_files:
-        c.print(Padding(f'[green]✓[/]  [bold]{Path(patched).name}[/]  [dim]patched[/]', (0, 2)))
-        if patched in result.diffs:
-            _print_diff(result.diffs[patched], c)
+        if result.ai_used != 'none':
+            c.print(Padding(f'[dim]Patching via [bold]{result.ai_used}[/]...[/]', (0, 2)))
             c.print()
+
+        for issue in result.syntax_errors:
+            loc = f'{issue.file}:{issue.line}' if issue.line else issue.file
+            c.print(Padding(f'[yellow]⚠ syntax error[/]  [dim]{loc}[/]  {issue.message}', (0, 2)))
+
+        for patched in result.patched_files:
+            c.print(Padding(f'[green]✓[/]  [bold]{Path(patched).name}[/]  [dim]patched[/]', (0, 2)))
+            if patched in result.diffs:
+                _print_diff(result.diffs[patched], c)
+                c.print()
 
     if result.patch_explanations:
         c.print()

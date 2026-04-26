@@ -6,10 +6,13 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.padding import Padding
+from rich.text import Text
 
 from slayer.ai_runner import AICliError, AI_CANDIDATES, _is_available, detect_ai_cli, AICliNotFoundError
+from slayer.models import Violation
 from slayer.patcher.llm_patcher import patch_path
-from slayer.reporter import render_json, render_patch_text, render_scan_text, print_scan_rich, print_patch_rich
+from slayer.reporter import render_json, render_patch_text, render_scan_text, print_scan_rich, print_patch_rich, _print_diff
 from slayer.scanner import scan_path
 
 app = typer.Typer(add_completion=False, help='SLAyer security scanner and patcher')
@@ -106,9 +109,43 @@ def patch(
     output_format: OutputFormatEnum = typer.Option(OutputFormatEnum.text, '--format', help='Output format'),
 ) -> None:
     target = Path(path)
+    rich_console = Console()
+
+    def _progress(event: str, violation: Violation, detail: str) -> None:
+        if output_format == OutputFormatEnum.json:
+            return
+        loc = f'{Path(violation.file).name}:{violation.line}'
+        if event == 'patched':
+            line = Text()
+            line.append('  ✓ ', style='bold green')
+            line.append(violation.rule_name, style='bold white')
+            line.append(f'  {loc}', style='dim')
+            rich_console.print(line)
+            if detail:
+                _print_diff(detail, rich_console)
+                rich_console.print()
+        elif event == 'unchanged':
+            rich_console.print(Padding(
+                f'[dim]  ↷  {violation.rule_name}  {loc}  (no change)[/]', (0, 0)
+            ))
+        elif event == 'error':
+            rich_console.print(Padding(
+                f'[red]  ✗  {violation.rule_name}  {loc}  {detail}[/]', (0, 0)
+            ))
+
     try:
         selected_ai = _read_required_ai()
-        result = patch_path(target, selected_ai=selected_ai)
+
+        if output_format == OutputFormatEnum.text:
+            header = Text()
+            header.append('  SLAyer', style='bold white')
+            header.append('  ·  ', style='dim')
+            header.append(str(target), style='cyan')
+            rich_console.print()
+            rich_console.print(header)
+            rich_console.print()
+
+        result = patch_path(target, selected_ai=selected_ai, progress_fn=_progress)
     except SlayerConfigError as exc:
         console.print(f'[red]Patch failed:[/red] {exc}')
         raise typer.Exit(code=2)
@@ -119,7 +156,10 @@ def patch(
         console.print(f'[red]Patch failed:[/red] {exc}')
         raise typer.Exit(code=2)
 
-    _print_patch(target, result, output_format)
+    if output_format == OutputFormatEnum.json:
+        typer.echo(render_json(result), nl=False)
+    else:
+        print_patch_rich(target, result, rich_console, skip_diffs=True)
     raise typer.Exit(code=1 if result.remaining_violations else 0)
 
 

@@ -6,15 +6,19 @@ import json
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
-from slayer.ai_runner import detect_ai_cli, extract_code, run_ai
+from slayer.ai_runner import AICliError, detect_ai_cli, extract_code, run_ai
 from slayer.models import AIChoice, PatchExplanation, PatchResult, Violation
 from slayer.redact import redact_secrets
 from slayer.rules import RULE_GUIDANCE, patch_explanation_for
 from slayer.scanner import detect_language, group_violations_by_file, scan_path
 
-MAX_PATCH_ROUNDS = 2
+# Max AI calls per file (safety valve against infinite loops)
+MAX_ATTEMPTS_PER_FILE = 20
+
+ProgressFn = Callable[[str, Violation, str], None]
 
 
 class PatchValidationError(RuntimeError):
@@ -39,6 +43,7 @@ def build_patch_prompt(path: Path, source: str, violations: list[Violation]) -> 
         f"- {violation.rule_name}: {RULE_GUIDANCE.get(violation.rule_name, 'Replace the violation with a safe alternative.')}"
         for violation in unique_violations.values()
     )
+
     def _redact_violation(v: Violation) -> dict:
         d = v.model_dump()
         d['code_snippet'] = redact_secrets(d['code_snippet'])
@@ -104,12 +109,96 @@ def validate_syntax(path: Path, code: str) -> None:
     if suffix in {'.ts', '.tsx'}:
         _validate_with_command(['tsc', '--pretty', 'false', '--noEmit'], suffix, code)
         return
-    # JSX/TSX without tsc and other file types are best-effort only.
 
 
-def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int = 60) -> PatchResult:
+def _patch_file_incremental(
+    path: Path,
+    file_name: str,
+    candidate,
+    selected_ai: AIChoice,
+    timeout: int,
+    scan_root: Path,
+    patched_files: list[str],
+    combined_diffs: dict[str, str],
+    patch_explanations: list[PatchExplanation],
+    explained_keys: set[tuple[str, str, int]],
+    progress_fn: ProgressFn | None,
+) -> None:
+    """Patch a single file one violation at a time, rescanning after each patch."""
+    attempted: set[tuple[str, int, str]] = set()
+
+    for _ in range(MAX_ATTEMPTS_PER_FILE):
+        # Fresh scan of this file to get current violations with correct line numbers
+        file_scan = scan_path(path)
+        current_violations = [v for v in file_scan.violations if v.file == file_name]
+
+        # Filter out violations we've already attempted but couldn't fix
+        pending = [
+            v for v in current_violations
+            if (v.rule_id, v.line, v.code_snippet[:60]) not in attempted
+        ]
+        if not pending:
+            break
+
+        violation = pending[0]
+        attempt_key = (violation.rule_id, violation.line, violation.code_snippet[:60])
+        attempted.add(attempt_key)
+
+        source = path.read_text(encoding='utf-8', errors='replace')
+        prompt = build_patch_prompt(path, redact_secrets(source), [violation])
+
+        try:
+            raw_output, _ = run_ai(
+                prompt,
+                preferred=selected_ai,
+                timeout=timeout,
+                cwd=path.parent,
+                candidate=candidate,
+            )
+            patched = extract_code(raw_output)
+            validate_syntax(path, patched)
+        except PatchValidationError as exc:
+            if progress_fn:
+                progress_fn('error', violation, str(exc))
+            continue
+        except AICliError as exc:
+            if progress_fn:
+                progress_fn('error', violation, str(exc))
+            # Don't retry on AI errors (timeout, execution error)
+            break
+
+        diff = _unified_diff(source, patched, file_name)
+        if diff:
+            path.write_text(patched, encoding='utf-8')
+
+            # Accumulate diff (append for same file across multiple patches)
+            combined_diffs[file_name] = combined_diffs.get(file_name, '') + diff
+
+            if file_name not in patched_files:
+                patched_files.append(file_name)
+
+            key = (file_name, violation.rule_id, violation.line)
+            if key not in explained_keys:
+                patch_explanations.append(patch_explanation_for(violation, file=file_name))
+                explained_keys.add(key)
+
+            if progress_fn:
+                progress_fn('patched', violation, diff)
+        else:
+            # AI returned unchanged code — violation may be unfixable, move on
+            if progress_fn:
+                progress_fn('unchanged', violation, '')
+
+
+def patch_path(
+    target: str | Path,
+    selected_ai: AIChoice = 'auto',
+    timeout: int = 120,
+    progress_fn: ProgressFn | None = None,
+) -> PatchResult:
     target_path = Path(target)
     scan_result = scan_path(target_path)
+
     if scan_result.deployable:
         return PatchResult(
             patched_files=[],
@@ -124,48 +213,41 @@ def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int 
     candidate = detect_ai_cli(preferred=selected_ai)
     scan_root = target_path.resolve()
     patched_files: list[str] = []
-    diffs: dict[str, str] = {}
+    combined_diffs: dict[str, str] = {}
     patch_explanations: list[PatchExplanation] = []
     explained_keys: set[tuple[str, str, int]] = set()
 
-    for _ in range(MAX_PATCH_ROUNDS):
-        changes_this_round = 0
-        for file_name, violations in group_violations_by_file(scan_result.violations).items():
-            path = Path(file_name)
-            # Guard: refuse to write outside scan root (symlink traversal defence)
-            try:
-                path.resolve().relative_to(scan_root if scan_root.is_dir() else scan_root.parent)
-            except ValueError:
-                continue
-            original = path.read_text(encoding='utf-8', errors='replace')
-            prompt = build_patch_prompt(path, redact_secrets(original), violations)
-            raw_output, _ = run_ai(prompt, preferred=selected_ai, timeout=timeout, cwd=path.parent, candidate=candidate)
-            patched = extract_code(raw_output)
-            validate_syntax(path, patched)
-            diff = _unified_diff(original, patched, file_name)
-            if diff:
-                path.write_text(patched, encoding='utf-8')
-                if file_name not in patched_files:
-                    patched_files.append(file_name)
-                diffs[file_name] = diff
-                for violation in violations:
-                    key = (file_name, violation.rule_id, violation.line)
-                    if key not in explained_keys:
-                        patch_explanations.append(patch_explanation_for(violation, file=file_name))
-                        explained_keys.add(key)
-                changes_this_round += 1
+    for file_name in list(group_violations_by_file(scan_result.violations).keys()):
+        path = Path(file_name)
+        # Guard: refuse to write outside scan root (symlink traversal defence)
+        try:
+            path.resolve().relative_to(scan_root if scan_root.is_dir() else scan_root.parent)
+        except ValueError:
+            continue
 
-        scan_result = scan_path(target_path)
-        if scan_result.deployable or changes_this_round == 0:
-            break
+        _patch_file_incremental(
+            path=path,
+            file_name=file_name,
+            candidate=candidate,
+            selected_ai=selected_ai,
+            timeout=timeout,
+            scan_root=scan_root,
+            patched_files=patched_files,
+            combined_diffs=combined_diffs,
+            patch_explanations=patch_explanations,
+            explained_keys=explained_keys,
+            progress_fn=progress_fn,
+        )
+
+    final_scan = scan_path(target_path)
 
     return PatchResult(
         patched_files=patched_files,
-        diffs=diffs,
+        diffs=combined_diffs,
         patch_explanations=patch_explanations,
-        remaining_violations=scan_result.violations,
-        deployable=scan_result.deployable,
+        remaining_violations=final_scan.violations,
+        deployable=final_scan.deployable,
         ai_used=candidate.name,
-        scanned_files=scan_result.scanned_files,
-        syntax_errors=scan_result.syntax_errors,
+        scanned_files=final_scan.scanned_files,
+        syntax_errors=final_scan.syntax_errors,
     )
