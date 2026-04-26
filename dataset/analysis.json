@@ -1,7 +1,8 @@
 {
   "inputs": {
     "dataset": "dataset/vulns_dataset_refined.jsonl",
-    "drepos": "dataset/vulns_drepos_refined.jsonl"
+    "drepos": "dataset/vulns_drepos_refined.jsonl",
+    "repos": "dataset/vulns_repos_refined.jsonl"
   },
   "sources": {
     "dataset": {
@@ -36,67 +37,108 @@
         "INSECURE_DESERIALIZATION": 1,
         "PATH_TRAVERSAL": 1
       }
+    },
+    "repos": {
+      "files_with_vulnerabilities": 2137,
+      "vulnerabilities": 4442,
+      "by_rule": {
+        "SQL_INJECTION": 1524,
+        "HARDCODED_SECRETS": 1350,
+        "COMMAND_INJECTION": 891,
+        "CORS_WILDCARD": 156,
+        "INSECURE_COOKIE": 140,
+        "WEAK_HASH": 125,
+        "SSRF": 122,
+        "DEBUG_MODE_ON": 68,
+        "XSS": 44,
+        "MASS_ASSIGNMENT": 12,
+        "INSECURE_DESERIALIZATION": 8,
+        "OPEN_REDIRECT": 2
+      }
     }
   },
   "totals": {
-    "files_with_vulnerabilities": 336,
-    "vulnerabilities": 485
+    "files_with_vulnerabilities": 2473,
+    "vulnerabilities": 4927
   },
   "by_rule": {
-    "HARDCODED_SECRETS": {
-      "total": 202,
-      "dataset": 130,
-      "drepos": 72
-    },
-    "DEBUG_MODE_ON": {
-      "total": 100,
-      "dataset": 94,
-      "drepos": 6
-    },
-    "INSECURE_COOKIE": {
-      "total": 46,
-      "dataset": 21,
-      "drepos": 25
-    },
     "SQL_INJECTION": {
-      "total": 40,
+      "total": 1564,
       "dataset": 31,
-      "drepos": 9
+      "drepos": 9,
+      "repos": 1524
     },
-    "OPEN_REDIRECT": {
-      "total": 25,
-      "dataset": 25,
-      "drepos": 0
-    },
-    "INSECURE_DESERIALIZATION": {
-      "total": 23,
-      "dataset": 22,
-      "drepos": 1
+    "HARDCODED_SECRETS": {
+      "total": 1552,
+      "dataset": 130,
+      "drepos": 72,
+      "repos": 1350
     },
     "COMMAND_INJECTION": {
-      "total": 22,
+      "total": 913,
       "dataset": 12,
-      "drepos": 10
+      "drepos": 10,
+      "repos": 891
+    },
+    "INSECURE_COOKIE": {
+      "total": 186,
+      "dataset": 21,
+      "drepos": 25,
+      "repos": 140
+    },
+    "DEBUG_MODE_ON": {
+      "total": 168,
+      "dataset": 94,
+      "drepos": 6,
+      "repos": 68
     },
     "CORS_WILDCARD": {
-      "total": 11,
+      "total": 167,
       "dataset": 4,
-      "drepos": 7
+      "drepos": 7,
+      "repos": 156
     },
     "WEAK_HASH": {
-      "total": 8,
+      "total": 133,
       "dataset": 5,
-      "drepos": 3
+      "drepos": 3,
+      "repos": 125
+    },
+    "SSRF": {
+      "total": 125,
+      "dataset": 2,
+      "drepos": 1,
+      "repos": 122
+    },
+    "XSS": {
+      "total": 44,
+      "dataset": 0,
+      "drepos": 0,
+      "repos": 44
+    },
+    "INSECURE_DESERIALIZATION": {
+      "total": 31,
+      "dataset": 22,
+      "drepos": 1,
+      "repos": 8
+    },
+    "OPEN_REDIRECT": {
+      "total": 27,
+      "dataset": 25,
+      "drepos": 0,
+      "repos": 2
+    },
+    "MASS_ASSIGNMENT": {
+      "total": 12,
+      "dataset": 0,
+      "drepos": 0,
+      "repos": 12
     },
     "PATH_TRAVERSAL": {
       "total": 5,
       "dataset": 4,
-      "drepos": 1
-    },
-    "SSRF": {
-      "total": 3,
-      "dataset": 2,
-      "drepos": 1
+      "drepos": 1,
+      "repos": 0
     }
   }
 }
