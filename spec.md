@@ -1,287 +1,291 @@
-# SLAyer — 개발 명세서 v7
+# SLAyer - Development Specification v7
 
-> 트랙: Developer Tooling | CMUX x AIM | 2026-04-26
+> Track: Developer Tooling | CMUX x AIM | 2026-04-26
 
 ---
 
-## 0. 핵심 한 줄
+## 0. One-sentence summary
 
-**바이브코딩으로 생성된 웹서비스 코드(Python · JS · TS)에서 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI(Claude Code / Codex / Gemini)로 자동 패치 후 배포 게이트를 여는 CLI 도구.**
+**SLAyer is a CLI tool that detects seven security vulnerability patterns in
+vibe-coded web-service code (Python, JS, and TS), patches them through an already
+installed AI CLI (Claude Code, Codex CLI, or Gemini CLI), and opens the deployment gate.**
 
 ```bash
-pip install slayer-sec   # 설치
-slayer start .           # 스캔 → 위반 목록 출력
-slayer patch .           # 위반 자동 패치 → 🚀 Deployment Approved
-slayer model             # AI CLI 상태 확인 / 선호 모델 설정
+pip install slayer-sec   # Install
+slayer start .           # Scan -> print violations
+slayer patch .           # Auto-patch violations -> Deployment Approved
+slayer model             # Check AI CLI status or set the preferred model
 ```
 
-**지원 언어**: Python (`.py`) · JavaScript (`.js`, `.jsx`) · TypeScript (`.ts`, `.tsx`)
-**타겟 사용자**: Claude Code / Codex / Gemini CLI 중 하나가 이미 설치된 바이브코더.
+**Supported languages:** Python (`.py`), JavaScript (`.js`, `.jsx`), and TypeScript (`.ts`, `.tsx`)
+**Target user:** a vibe coder who already has Claude Code, Codex CLI, or Gemini CLI installed.
 
-**"SLAyer 설정 제로"의 의미**:
-- SLAyer 자체에 API 키, config 파일, 로그인 없음
-- AI CLI(Claude Code 등)는 사용자가 이미 설치·인증한 상태를 전제
-- AI CLI 없으면 AST 스캔(탐지)은 동작, 패치만 불가 — 그 경우 설치 안내 표시
+**Meaning of "zero SLAyer configuration":**
+
+- SLAyer itself has no API key, config file, or login requirement.
+- The user is expected to have already installed and authenticated the AI CLI, such as Claude Code.
+- If no AI CLI is available, AST scanning still works; only patching is unavailable and SLAyer shows setup guidance.
 
 ---
 
-## 0.5 Dataset Strategy
+## 0.5 Dataset strategy
 
-### GitHub 수집 바이브코딩 레포 — 7종 룰 도출 근거
+### GitHub-collected vibe-coding repositories as the basis for the seven rules
 
-`CLAUDE.md` / `AGENTS.md` 파일 보유 레포 = AI CLI로 빌드된 직접 증거.
+Repositories containing `CLAUDE.md` or `AGENTS.md` provide direct evidence that the project was
+built with an AI CLI workflow.
 
-| 구성 | 내용 |
+| Item | Details |
 |------|------|
-| 수집 방법 | GitHub Code Search API (`filename:CLAUDE.md`) |
-| 규모 | 바이브코딩 레포 직접 수집 |
-| 분석 도구 | `tools/extract_vulns.py` |
-| 결과 | `dataset/analysis.json` (취약파일 336개 · 485건) |
+| Collection method | GitHub Code Search API (`filename:CLAUDE.md`) |
+| Scale | Direct collection of vibe-coding repositories |
+| Analysis tool | `tools/extract_vulns.py` |
+| Result | `dataset/analysis.json` (336 vulnerable files, 485 findings) |
 
-**관측된 취약점 빈도** (`dataset/analysis.json` 기준, 3개 소스 합산):
+**Observed vulnerability frequency** based on `dataset/analysis.json`, aggregated across three sources:
 
-| SLAyer 룰 | extract_vulns 룰명 | 관측 건수 (합산) | 비고 |
+| SLAyer rule | `extract_vulns` rule name | Observed count | Note |
 |-----------|------------------|---------------|------|
-| SQL_PARAM_BINDING | SQL_INJECTION | **1,564** | 실레포 1,524건 포함 |
-| NO_HARDCODED_SECRETS | HARDCODED_SECRETS | **1,552** | API 키 하드코딩 |
-| NO_EXEC | COMMAND_INJECTION | **913** | shell=True |
-| NO_DEBUG_MODE | DEBUG_MODE_ON | 168 | debug=True 배포 |
-| NO_INSECURE_HASH | WEAK_HASH | 133 | MD5/SHA1 패스워드 |
-| NO_NETWORK | SSRF | 125 | 유저 입력 URL 기준 |
-| NO_BARE_EXCEPT | _(미탐지)_ | — | extract_vulns.py 스코프 외, SLAyer AST 독립 탐지 |
+| SQL_PARAM_BINDING | SQL_INJECTION | **1,564** | Includes 1,524 real-repository findings |
+| NO_HARDCODED_SECRETS | HARDCODED_SECRETS | **1,552** | Hard-coded API keys |
+| NO_EXEC | COMMAND_INJECTION | **913** | `shell=True` |
+| NO_DEBUG_MODE | DEBUG_MODE_ON | 168 | `debug=True` in deployment paths |
+| NO_WEAK_RANDOM | WEAK_HASH | 133 | Weak security primitives mapped to the current weak-randomness rule |
+| NO_NETWORK | SSRF | 125 | User-input URL targets |
+| NO_BARE_EXCEPT | Not detected by that extractor | - | Outside `extract_vulns.py` scope; SLAyer detects this independently with AST/regex logic |
 
-> 총 4,927건 / 취약 파일 2,473개 (dataset + drepos + repos 3개 소스 합산)
-
-> 이 빈도 데이터를 근거로 7종 룰을 선정한다.
+Total: 4,927 findings across 2,473 vulnerable files from the `dataset`, `drepos`, and `repos` sources.
+This frequency data is the basis for selecting the seven rules.
 
 ---
 
-## 0.55 7종 선정 방법론 — 빈도 × 중요도 매트릭스
+## 0.55 Seven-rule selection methodology: frequency x impact matrix
 
-### 중요도 5축 평가 (각 1–5점)
+### Five impact axes, each scored from 1 to 5
 
-| 축 | 설명 | 가중치 |
+| Axis | Description | Weight |
 |----|------|--------|
-| **A. 실세계 공격 가능성** | CVSS Exploitability 기준 (공격 복잡도 역수) | 25% |
-| **B. 피해 심각도** | 데이터 유출 / RCE / 재정 피해 최대치 | 25% |
-| **C. Time-to-Exploit** | 봇 자동화 기준 최초 공격까지 걸리는 시간 | 20% |
-| **D. AST/Regex 탐지 신뢰도** | 결정적 탐지 가능 여부 (FP·FN 최소화) | 15% |
-| **E. AI 코드 증폭 인수** | 인간 코드 대비 AI 생성 코드에서 얼마나 더 자주·심하게 발생 | 15% |
+| **A. Real-world exploitability** | Based on the inverse of CVSS attack complexity | 25% |
+| **B. Damage severity** | Maximum impact such as data exposure, RCE, or financial loss | 25% |
+| **C. Time-to-exploit** | Time until first automated bot attack | 20% |
+| **D. AST/regex detection confidence** | Whether deterministic detection is possible with low FP/FN risk | 15% |
+| **E. AI-code amplification factor** | How much more often or severely it appears in AI-generated code than in human-written code | 15% |
 
-### 최종 선정 공식
+### Final selection formula
 
+```text
+Final score = weighted_impact_score(A through E) * 0.6 + normalized_frequency * 0.4
+
+normalized_frequency = log10(count) / log10(max_count) * 5   # converted to a 1-5 scale
 ```
-최종 점수 = 중요도_가중합(A~E) × 0.6 + 빈도_정규화 × 0.4
 
-빈도 정규화 = log10(count) / log10(max_count) × 5   # 1–5점 척도로 환산
-```
+### Candidate-to-final selection result
 
-### 후보 → 최종 7종 선정 결과
+Frequency normalization uses `log10(1564) = 3.194` as the maximum, based on SQL_INJECTION with 1,564 findings.
 
-빈도 정규화: `log10(1564) = 3.194` 기준 (max = SQL_INJECTION 1,564건)
-
-| 룰 | 중요도합산 | 관측건수 | 빈도점수(1-5) | 최종점수 | 선정 |
+| Rule | Weighted impact | Observed count | Frequency score (1-5) | Final score | Selected |
 |----|-----------|---------|-------------|---------|------|
-| NO_HARDCODED_SECRETS | 5.00 | 1,552 | 4.99 | **5.00** | ✓ |
-| NO_EXEC | 4.70 | 913 | 4.63 | **4.67** | ✓ |
-| SQL_PARAM_BINDING | 4.20 | 1,564 | 5.00 | **4.52** | ✓ |
-| NO_NETWORK | 3.70 | 125 | 3.28 | **3.53** | ✓ |
-| NO_DEBUG_MODE | 3.55 | 168 | 3.48 | **3.52** | ✓ |
-| NO_INSECURE_HASH | 3.55 | 133 | 3.32 | **3.46** | ✓ |
-| NO_BARE_EXCEPT | 3.00 | _(SLAyer 독립탐지)_ | 3.00† | **3.00** | ✓ |
-| INSECURE_DESERIALIZATION | 4.20 | 31 | 2.33 | 3.45 | — AST 탐지 미구현 (v2 후보) |
-| CORS_WILDCARD | 2.95 | 167 | 3.48 | 3.16 | — FP 높음 |
-| INSECURE_COOKIE | 2.60 | 186 | 3.55 | 2.98 | — JS 전용, 스코프 외 |
+| NO_HARDCODED_SECRETS | 5.00 | 1,552 | 4.99 | **5.00** | yes |
+| NO_EXEC | 4.70 | 913 | 4.63 | **4.67** | yes |
+| SQL_PARAM_BINDING | 4.20 | 1,564 | 5.00 | **4.52** | yes |
+| NO_NETWORK | 3.70 | 125 | 3.28 | **3.53** | yes |
+| NO_DEBUG_MODE | 3.55 | 168 | 3.48 | **3.52** | yes |
+| NO_WEAK_RANDOM | 3.55 | 133 | 3.32 | **3.46** | yes |
+| NO_BARE_EXCEPT | 3.00 | Independent SLAyer detection | 3.00 | **3.00** | yes |
+| INSECURE_DESERIALIZATION | 4.20 | 31 | 2.33 | 3.45 | no; AST detection not implemented yet, v2 candidate |
+| CORS_WILDCARD | 2.95 | 167 | 3.48 | 3.16 | no; high false-positive risk |
+| INSECURE_COOKIE | 2.60 | 186 | 3.55 | 2.98 | no; JS-only and outside current scope |
 
-† NO_BARE_EXCEPT: extract_vulns.py 스코프 외. SLAyer AST 탐지 독립 운용, 빈도점수 3.00(추정) 적용.
+### Benchmark datasets
 
-### 벤치마크 데이터셋
-
-| 구성 | 경로 |
+| Component | Path |
 |------|------|
-| 취약 케이스 | `dataset/slayer-bench-v0/vulnerable/` |
-| 패치 완료 케이스 | `dataset/slayer-bench-v0/fixed/` |
-| false positive 케이스 | `dataset/slayer-bench-v0/false_positive/` |
-| AI 생성 코드 케이스 | `dataset/ai-bench-v0/` |
+| Vulnerable cases | `dataset/slayer-bench-v0/vulnerable/` |
+| Fixed cases | `dataset/slayer-bench-v0/fixed/` |
+| False-positive-free cases | `dataset/slayer-bench-v0/false_positive/` |
+| AI-generated code cases | `dataset/ai-bench-v0/` |
 
 ---
 
-## 0.6 Vibe Coding Vulnerability Taxonomy
+## 0.6 Vibe coding vulnerability taxonomy
 
-### 왜 바이브코딩 코드는 취약한가
+### Why vibe-coded applications become vulnerable
 
-| 패턴 원인 | 설명 |
+| Root cause | Description |
 |----------|------|
-| "일단 동작하게" 프롬프트 | 기능 구현 우선, 보안 컨텍스트 없음 |
-| 오래된 튜토리얼 데이터 | f-string SQL, MD5 해싱 등 구식 패턴이 훈련 데이터에 많음 |
-| 개발 예제 그대로 배포 | `DEBUG=True`, 하드코딩 크레덴셜을 교체 안 함 |
-| 에러 제거 요청 | `except: pass` — "에러 없애줘" 프롬프트 결과 |
+| "Just make it work" prompts | Feature implementation is prioritized without security context |
+| Outdated tutorial data | Training data contains old patterns such as f-string SQL and MD5 hashing |
+| Shipping development examples | `DEBUG=True` and hard-coded credentials are not replaced before deployment |
+| Requests to remove errors | `except: pass` appears as a result of prompts like "make the error go away" |
 
-### Vibe Coding Ruleset 7종 (데이터 기반 확정)
+### Seven-rule vibe coding ruleset
 
-> GitHub 1,000개 바이브코딩 레포 분석 결과 관측 빈도 상위 7종.
+GitHub analysis of 1,000 vibe-coding repositories showed these high-frequency patterns.
 
-| ID | Rule Type | Severity | 관측 빈도 |
+| ID | Rule type | Severity | Observed frequency |
 |----|-----------|----------|----------|
-| V-01 | NO_HARDCODED_SECRETS | critical | 33.9% 레포 |
-| V-02 | NO_NETWORK | critical | 61.3% 레포 |
-| V-03 | NO_EXEC | critical | 48.3% 레포 |
-| V-04 | SQL_PARAM_BINDING | high | 56.7% 레포 |
-| V-05 | NO_DEBUG_MODE | high | 10.2% 레포 |
-| V-06 | NO_INSECURE_HASH | high | 8.7% 레포 |
-| V-07 | NO_BARE_EXCEPT | medium | 42.1% 레포 |
+| V-01 | NO_HARDCODED_SECRETS | critical | 33.9% of repositories |
+| V-02 | NO_NETWORK | critical | 61.3% of repositories |
+| V-03 | NO_EXEC | critical | 48.3% of repositories |
+| V-04 | SQL_PARAM_BINDING | high | 56.7% of repositories |
+| V-05 | NO_DEBUG_MODE | high | 10.2% of repositories |
+| V-06 | NO_WEAK_RANDOM | high | 8.7% of repositories |
+| V-07 | NO_BARE_EXCEPT | medium | 42.1% of repositories |
 
-### 패치 전략 (언어별, 실제 동작하는 코드로 교체)
+### Patch strategy by language, replacing code with working implementations
 
-| Rule | Python 패치 | JS/TS 패치 |
+| Rule | Python patch | JS/TS patch |
 |------|------------|-----------|
 | NO_HARDCODED_SECRETS | `os.environ.get("VAR", "")` | `process.env.VAR ?? ""` |
-| NO_NETWORK | `raise NotImplementedError("외부 호출 차단")` | `throw new Error("외부 호출 차단")` |
-| NO_EXEC | `shell=False` + 리스트 인수 | `execFile("cmd", [arg], cb)` |
+| NO_NETWORK | `raise NotImplementedError("External calls are blocked")` | `throw new Error("External calls are blocked")` |
+| NO_EXEC | `shell=False` with list arguments | `execFile("cmd", [arg], cb)` |
 | SQL_PARAM_BINDING | `cursor.execute("... WHERE x=?", (val,))` | `query("... WHERE x=$1", [val])` |
-| NO_DEBUG_MODE | `os.environ.get("DEBUG","false")=="true"` | `process.env.NODE_ENV!=="production"` |
-| NO_INSECURE_HASH | `hashlib.pbkdf2_hmac("sha256", ...)` | `crypto.createHash("sha256")` |
-| NO_BARE_EXCEPT | `except Exception as e: logger.warning(e)` | `catch(e){console.error(e)}` |
+| NO_DEBUG_MODE | `os.environ.get("DEBUG", "false") == "true"` | `process.env.NODE_ENV !== "production"` |
+| NO_WEAK_RANDOM | `secrets.token_hex(32)` | `crypto.randomUUID()` |
+| NO_BARE_EXCEPT | `except Exception as e: logger.warning(e)` | `catch(e){ console.error(e) }` |
 
 ---
 
-## 1. 아키텍처
+## 1. Architecture
 
-단일 Python 패키지. plain 텍스트 CLI 출력.
-AI 호출은 직접 API 대신 **로컬 AI CLI 프로세스에 위임** — `anthropic` SDK 의존성 없음.
+SLAyer is a single Python package with plain-text CLI output. AI calls are delegated to a
+**local AI CLI process** instead of using a direct API, so there is no `anthropic` SDK dependency.
 
-```
+```text
 slayer/
-├── slayer/
-│   ├── cli.py              # entry point — slayer start / patch / model
-│   ├── models.py           # Pydantic: SLARule, Violation, ScanResult, PatchResult
-│   ├── ai_runner.py        # AI CLI 감지 (claude→codex→gemini) + 프롬프트 위임
-│   ├── scanner.py          # 파일 수집 + 분석기 디스패치
-│   ├── reporter.py         # text/json 출력 렌더링
-│   ├── rules.py            # DEFAULT_RULES_BY_ID
-│   ├── analyzers/
-│   │   ├── py_analyzer.py   # Python AST 분석 (AI 불필요)
-│   │   └── js_analyzer.py   # JS/TS regex 분석 (AI 불필요)
-│   └── patcher/
-│       └── llm_patcher.py   # 자동 패치 (AI CLI 위임, 언어 자동 감지)
-├── pyproject.toml
-├── demo_vuln.py             # Python 데모
-├── demo_vuln.js             # JS 데모
-└── spec.md
+|-- slayer/
+|   |-- cli.py              # entry point: slayer start / patch / model
+|   |-- models.py           # Pydantic: SLARule, Violation, ScanResult, PatchResult
+|   |-- ai_runner.py        # AI CLI detection (claude -> codex -> gemini) and prompt delegation
+|   |-- scanner.py          # file collection and analyzer dispatch
+|   |-- reporter.py         # text/json output rendering
+|   |-- rules.py            # DEFAULT_RULES_BY_ID
+|   |-- analyzers/
+|   |   |-- py_analyzer.py   # Python AST analysis; no AI required
+|   |   `-- js_analyzer.py   # JS/TS regex analysis; no AI required
+|   `-- patcher/
+|       `-- llm_patcher.py   # automatic patching through AI CLI delegation and language detection
+|-- pyproject.toml
+|-- demo_vuln.py             # Python demo
+|-- demo_vuln.js             # JS demo
+`-- spec.md
 ```
 
 ---
 
-## 2. AI CLI 감지 및 위임 (`ai_runner.py`)
+## 2. AI CLI detection and delegation (`ai_runner.py`)
 
-**SLAyer는 직접 AI API를 호출하지 않는다.** 로컬에 설치된 AI CLI에 프롬프트를 전달하고 stdout을 수신한다.
+**SLAyer does not call AI APIs directly.** It sends prompts to a locally installed AI CLI and reads stdout.
 
-### 감지 우선순위
+### Detection priority
 
-| AI CLI | 감지 명령 | 실행 명령 |
+| AI CLI | Detection command | Execution command |
 |--------|----------|----------|
 | `claude` | `claude --version` | `claude -p "{prompt}"` |
 | `codex` | `codex --version` | `codex exec "{prompt}"` |
 | `gemini` | `gemini --version` | `gemini "{prompt}"` |
 
-**감지 성공 조건**: check 명령 exit code = 0.
-**우선순위**: `.slayer.yml` 저장값 > 자동 감지(위 순서).
+**Successful detection condition:** the check command exits with code 0.
+**Priority:** saved value in `.slayer.yml` first, then auto-detection in the order above.
 
-### 에러 처리
+### Error handling
 
-| 상황 | 동작 |
+| Situation | Behavior |
 |------|------|
-| 아무 AI CLI도 없음 | `AICliNotFoundError` → 설치 안내 출력, AST 스캔은 계속 |
-| CLI exit code ≠ 0 | stderr 내용을 에러 메시지로 표시, 원본 파일 유지 |
-| stdout이 유효하지 않은 코드 | 원본 파일 복원, "Patch failed" 표시 |
-| 60초 타임아웃 | 원본 파일 복원 |
+| No AI CLI is installed | `AICliNotFoundError` -> show installation guidance; AST scanning still works |
+| CLI exit code is not 0 | Show stderr content as the error message and keep the original file |
+| stdout is not valid code | Restore the original file and show "Patch failed" |
+| 60-second timeout | Restore the original file |
 
-**AI CLI 없을 때 안내 메시지**:
-```
-✗ AI CLI가 감지되지 않았습니다.
+**Message when no AI CLI is found:**
 
-다음 중 하나를 설치하세요:
-  • Claude Code   https://claude.ai/code
-  • Codex CLI     npm install -g @openai/codex
-  • Gemini CLI    npm install -g @google/gemini-cli
+```text
+No AI CLI was detected.
 
-AST 기반 스캔(탐지만)은 AI 없이도 동작합니다.
+Install one of the following:
+  - Claude Code   https://claude.ai/code
+  - Codex CLI     npm install -g @openai/codex
+  - Gemini CLI    npm install -g @google/gemini-cli
+
+AST-based scanning works without AI; only patching requires an AI CLI.
 ```
 
 ---
 
-## 3. CLI 인터페이스
+## 3. CLI interface
 
-명령어 3개.
+SLAyer exposes three commands.
 
-### 3-1. slayer start
+### 3-1. `slayer start`
 
 ```bash
 slayer start <path>
 ```
 
-- `.py/.js/.jsx/.ts/.tsx` 파일 재귀 수집 → AST/regex 스캔 → 위반 목록 plain 텍스트 출력
-- path 생략 시 현재 디렉토리 (`.`)
+- Recursively collect `.py`, `.js`, `.jsx`, `.ts`, and `.tsx` files -> run AST/regex scans -> print violations as plain text.
+- If `path` is omitted, use the current directory (`.`).
 
-### 3-2. slayer patch
+### 3-2. `slayer patch`
 
 ```bash
 slayer patch <path>
 ```
 
-- 스캔 → 위반 발견 시 AI CLI로 패치 → 재스캔
-- 패치 완료 후 "🚀 Deployment Approved" 또는 잔여 위반 목록 출력
+- Scan -> when violations are found, patch through the AI CLI -> rescan.
+- After patching, print `Deployment Approved` or the remaining violation list.
 
-### 3-3. slayer model
+### 3-3. `slayer model`
 
 ```bash
-slayer model                # 감지된 AI CLI 상태 + 현재 설정 표시
-slayer model claude         # claude 사용으로 .slayer.yml에 저장
-slayer model codex          # codex 사용으로 .slayer.yml에 저장
-slayer model gemini         # gemini 사용으로 .slayer.yml에 저장
-slayer model auto           # 자동 감지 (기본값)으로 초기화
+slayer model                # Show detected AI CLI status and current setting
+slayer model claude         # Save claude in .slayer.yml
+slayer model codex          # Save codex in .slayer.yml
+slayer model gemini         # Save gemini in .slayer.yml
+slayer model auto           # Reset to auto-detection, the default
 ```
 
-**Exit codes (start / patch 공통)**:
-- `0` — violations 없음 (Deployment Approved)
-- `1` — violations 존재 (Deployment BLOCKED)
-- `2` — 실행 오류
+**Exit codes for both `start` and `patch`:**
 
-**공통 옵션**:
-```
---format [text|json]   출력 형식 (기본: text)
+- `0` - no violations; Deployment Approved.
+- `1` - violations exist; Deployment BLOCKED.
+- `2` - runtime error.
+
+**Common option:**
+
+```text
+--format [text|json]   Output format, default: text
 ```
 
 ---
 
-## 4. 출력 형식
+## 4. Output format
 
-### text 형식 (기본)
+### Text format, default
 
-```
+```text
 SLAyer  Scanning demo_vuln.py
 
-✗  NO_HARDCODED_SECRETS  demo_vuln.py:5   API_KEY = "sk-prod-..."
-✗  NO_NETWORK            demo_vuln.py:9   requests.get(...)
-✗  SQL_PARAM_BINDING     demo_vuln.py:13  f"SELECT * FROM ..."
-✗  NO_EXEC               demo_vuln.py:17  subprocess.run(..., shell=True)
+NO_HARDCODED_SECRETS  demo_vuln.py:5   API_KEY = "sk-prod-..."
+NO_NETWORK            demo_vuln.py:9   requests.get(...)
+SQL_PARAM_BINDING     demo_vuln.py:13  f"SELECT * FROM ..."
+NO_EXEC               demo_vuln.py:17  subprocess.run(..., shell=True)
 
 Deployment BLOCKED
 ```
 
-### json 형식 (--format json)
+### JSON format (`--format json`)
 
 ```json
 {
   "violations": [
     {
       "rule_id": "rule_1",
-      "rule_name": "외부 네트워크 호출 없음",
+      "rule_name": "No external network calls",
       "file": "/abs/path/demo_vuln.py",
       "line": 9,
       "col": 0,
       "code_snippet": "    return requests.get(...)",
-      "explanation": "외부 서버로 데이터를 보내는 코드예요."
+      "explanation": "This code sends data to an external server."
     }
   ],
   "pass_count": 0,
@@ -292,13 +296,13 @@ Deployment BLOCKED
 
 ---
 
-## 5. 데이터 모델 (`models.py`)
+## 5. Data models (`models.py`)
 
 ```python
-RuleType = Literal["NO_NETWORK","NO_EXEC","NO_HARDCODED_SECRETS",
-                   "SQL_PARAM_BINDING","NO_DEBUG_MODE",
-                   "NO_INSECURE_HASH","NO_BARE_EXCEPT","CUSTOM"]
-Severity = Literal["critical","high","medium"]
+RuleType = Literal["NO_NETWORK", "NO_EXEC", "NO_HARDCODED_SECRETS",
+                   "SQL_PARAM_BINDING", "NO_DEBUG_MODE",
+                   "NO_WEAK_RANDOM", "NO_BARE_EXCEPT", "CUSTOM"]
+Severity = Literal["critical", "high", "medium"]
 
 class SLARule(BaseModel):
     id: str
@@ -315,7 +319,7 @@ class Violation(BaseModel):
     line: int
     col: int
     code_snippet: str
-    explanation: str    # 한국어
+    explanation: str    # English
 
 class ScanResult(BaseModel):
     rules: List[SLARule]
@@ -326,7 +330,8 @@ class ScanResult(BaseModel):
 
 class PatchResult(BaseModel):
     patched_files: List[str]
-    diffs: Dict[str, str]       # filepath → unified diff
+    diffs: Dict[str, str]       # filepath -> unified diff
+    patch_explanations: List[PatchExplanation]
     remaining_violations: List[Violation]
     deployable: bool
     ai_used: str                # "claude" / "codex" / "gemini"
@@ -336,141 +341,150 @@ class PatchResult(BaseModel):
 
 ## 6. Analyzers (`analyzers/`)
 
-AI 없이 결정적으로 동작.
+The analyzers operate deterministically without AI.
 
-### `py_analyzer.py` — Python AST 기반
+### `py_analyzer.py` - Python AST-based analyzer
 
-- **NO_NETWORK**: requests/httpx/urllib 등 네트워크 라이브러리 임포트 + 메서드 호출
-- **NO_EXEC**: subprocess.run(shell=True), os.system() 등
-- **NO_HARDCODED_SECRETS**: password/api_key/secret/token 할당, sk-/ghp_ 패턴
-- **SQL_PARAM_BINDING**: f-string + SQL 키워드 (SELECT/INSERT/UPDATE/DELETE/DROP)
-- **NO_DEBUG_MODE**: `DEBUG=True`, `app.run(debug=True)`
-- **NO_INSECURE_HASH**: `hashlib.md5()`, `hashlib.sha1()` 호출
-- **NO_BARE_EXCEPT**: `except: pass` / `except Exception: pass`
+- **NO_NETWORK:** network library imports and method calls such as `requests`, `httpx`, and `urllib`.
+- **NO_EXEC:** `subprocess.run(shell=True)`, `os.system()`, and similar patterns.
+- **NO_HARDCODED_SECRETS:** assignments to password, api_key, secret, or token variables, plus `sk-` and `ghp_` patterns.
+- **SQL_PARAM_BINDING:** f-strings containing SQL keywords such as SELECT, INSERT, UPDATE, DELETE, or DROP.
+- **NO_DEBUG_MODE:** `DEBUG=True` and `app.run(debug=True)`.
+- **NO_WEAK_RANDOM:** `random.choice()` and related weak randomness in security contexts.
+- **NO_BARE_EXCEPT:** `except: pass` and `except Exception: pass`.
 
-### `js_analyzer.py` — JS/TS Regex 기반
+### `js_analyzer.py` - JS/TS regex-based analyzer
 
-- **NO_NETWORK**: `fetch(`, `axios.get/post` 등
-- **NO_EXEC**: `child_process.exec`, `execSync`, `spawnSync`
-- **NO_HARDCODED_SECRETS**: const/let/var 시크릿 할당, ghp_/sk- 패턴
-- **SQL_PARAM_BINDING**: 템플릿 리터럴 + SQL 키워드
-- **NO_DEBUG_MODE**: `debug: true`, `DEBUG = true`
-- **NO_INSECURE_HASH**: `createHash('md5')`, `createHash('sha1')`
-- **NO_BARE_EXCEPT**: `catch(e) {}` (빈 catch 블록)
+- **NO_NETWORK:** `fetch(`, `axios.get/post`, and similar calls.
+- **NO_EXEC:** `child_process.exec`, `execSync`, and `spawnSync`.
+- **NO_HARDCODED_SECRETS:** const/let/var secret assignments, plus `ghp_` and `sk-` patterns.
+- **SQL_PARAM_BINDING:** template literals containing SQL keywords.
+- **NO_DEBUG_MODE:** `debug: true` and `DEBUG = true`.
+- **NO_WEAK_RANDOM:** `Math.random()` in token, session, or OTP contexts.
+- **NO_BARE_EXCEPT:** empty `catch(e) {}` blocks.
 
 ---
 
-## 7. LLM Patcher (`patcher/llm_patcher.py`)
+## 7. LLM patcher (`patcher/llm_patcher.py`)
 
-AI CLI에 파일 내용 + SLAyer가 탐지한 위반 목록을 전달해 수정된 전체 코드를 수신.
+SLAyer sends the file contents and the detected violation list to the AI CLI, then receives the corrected full code.
 
-**핵심 원칙**: AI는 SLAyer가 탐지한 violation만 수정. 그 외 코드는 변경 금지.
+**Core principle:** the AI may fix only the violations detected by SLAyer. It must not change unrelated code.
 
-### 언어별 구문 검증
+### Syntax validation by language
 
-| 언어 | 검증 | 실패 시 |
+| Language | Validation | On failure |
 |------|------|---------|
-| Python | `ast.parse()` | 원본 복원 |
-| JS/TS | `node --check` | 원본 복원 |
+| Python | `ast.parse()` | Restore the original file |
+| JS/TS | `node --check` | Restore the original file |
 
-### rollback 조건
-1. AI CLI exit code ≠ 0
-2. Python: `ast.parse()` 실패
-3. JS/TS: diff 변경 라인 > 원본 × 0.2
-4. 타임아웃 (60초)
+### Rollback conditions
+
+1. AI CLI exit code is not 0.
+2. Python `ast.parse()` fails.
+3. JS/TS changed lines exceed 20% of the original file.
+4. The AI CLI times out after 60 seconds.
 
 ---
 
-## 8. Acceptance Criteria
+## 8. Acceptance criteria
 
-### AC-01 — start: 스캔 출력
-```
+### AC-01 - `start`: scan output
+
+```text
 Given: slayer start demo_vuln.py
-Then:  위반 목록 "✗ RULE_TYPE  file:line  snippet" 형식 출력
-       violations > 0 → exit 1, violations = 0 → exit 0
+Then:  print violations in the format "RULE_TYPE  file:line  snippet"
+       violations > 0 -> exit 1, violations = 0 -> exit 0
 ```
 
-### AC-02 — start: 파일 없는 디렉토리
-```
-Given: 대상 파일 없는 디렉토리
-Then:  "No files found" 출력, exit 0
+### AC-02 - `start`: directory with no target files
+
+```text
+Given: a directory with no target files
+Then:  print "No files found", exit 0
 ```
 
-### AC-03 — start: JSON 출력
-```
+### AC-03 - `start`: JSON output
+
+```text
 Given: slayer start demo_vuln.py --format json
-Then:  파싱 가능한 JSON, violations[]/pass_count/fail_count/deployable 포함
+Then:  output parseable JSON containing violations[], pass_count, fail_count, and deployable
 ```
 
-### AC-04 — patch: 자동 패치
-```
-Given: slayer patch demo_vuln.py (AI CLI 설치 환경)
-Then:  "Patching via {ai_name}..." 출력
-       재스캔 후 violations=0 → "🚀 Deployment Approved", exit 0
-       잔여 violations → 목록 출력, exit 1
+### AC-04 - `patch`: automatic patching
+
+```text
+Given: slayer patch demo_vuln.py in an environment with an AI CLI installed
+Then:  print "Patching via {ai_name}..."
+       after rescan, if violations=0 -> print "Deployment Approved" and exit 0
+       if violations remain -> print the remaining list and exit 1
 ```
 
-### AC-05 — patch: JSON 출력
-```
+### AC-05 - `patch`: JSON output
+
+```text
 Given: slayer patch demo_vuln.py --format json
-Then:  patched_files/diffs/remaining_violations/deployable/ai_used 포함 JSON
+Then:  output JSON containing patched_files, diffs, remaining_violations, deployable, and ai_used
 ```
 
-### AC-06 — AI CLI 없는 환경
-```
-Given: claude/codex/gemini 모두 미설치
-When:  slayer start → AST 스캔 정상 동작
-When:  slayer patch → "AI CLI가 감지되지 않았습니다." + 설치 안내, exit 2
+### AC-06 - environment without an AI CLI
+
+```text
+Given: claude, codex, and gemini are all missing
+When:  slayer start runs -> AST scanning works normally
+When:  slayer patch runs -> print "No AI CLI was detected" with install guidance, exit 2
 ```
 
-### AC-07 — SyntaxError 파일 처리
-```
-Given: SyntaxError 파일 포함
-Then:  "⚠ syntax error" 경고 후 건너뜀, 나머지 파일 계속 스캔
+### AC-07 - SyntaxError file handling
+
+```text
+Given: the scan includes a file with SyntaxError
+Then:  print a syntax-error warning, skip that file, and keep scanning the remaining files
 ```
 
-### AC-08 — 벤치마크 통과
-```
+### AC-08 - benchmark pass
+
+```text
 Given: dataset/slayer-bench-v0/
-Then:  vulnerable/ 전부 BLOCKED
-       fixed/ 전부 Approved
-       false_positive/ 전부 Approved
+Then:  every vulnerable/ case is BLOCKED
+       every fixed/ case is Approved
+       every false_positive/ case is Approved
 ```
 
 ---
 
-## 9. 데모 시나리오
+## 9. Demo scenario
 
 ```bash
-# 설치
+# Install
 pip install slayer-sec
 
-# 스캔
+# Scan
 slayer start demo_vuln.py
-# ✗  NO_HARDCODED_SECRETS  demo_vuln.py:5   API_KEY = "sk-prod-..."
-# ✗  NO_NETWORK            demo_vuln.py:9   requests.get(...)
-# ✗  SQL_PARAM_BINDING     demo_vuln.py:13  f"SELECT * FROM ..."
-# ✗  NO_EXEC               demo_vuln.py:17  subprocess.run(..., shell=True)
+# NO_HARDCODED_SECRETS  demo_vuln.py:5   API_KEY = "sk-prod-..."
+# NO_NETWORK            demo_vuln.py:9   requests.get(...)
+# SQL_PARAM_BINDING     demo_vuln.py:13  f"SELECT * FROM ..."
+# NO_EXEC               demo_vuln.py:17  subprocess.run(..., shell=True)
 # Deployment BLOCKED
 
-# 자동 패치
+# Automatic patching
 slayer patch demo_vuln.py
 # Patching via claude...
-# 🚀 Deployment Approved
+# Deployment Approved
 
-# CI 통합
+# CI integration
 slayer patch ./src --format json | jq '.deployable'
-# → true
+# -> true
 ```
 
 ---
 
-## 10. 배포
+## 10. Distribution
 
 ```bash
-pip install -e ".[dev]"     # 개발 설치
-python -m build             # 빌드
-pip install slayer-sec      # 사용자 설치
+pip install -e ".[dev]"     # Development install
+python -m build             # Build
+pip install slayer-sec      # User install
 ```
 
-**의존성**: `pydantic`, `typer`, `rich` — AI SDK 없음.
+**Dependencies:** `pydantic`, `typer`, and `rich`. SLAyer uses no AI SDK.

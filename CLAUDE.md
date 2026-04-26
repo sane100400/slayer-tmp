@@ -4,83 +4,87 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**SLAyer** — CMUX x AIM 해커톤 | Developer Tooling 트랙 | 2026-04-26
+**SLAyer** - CMUX x AIM Hackathon | Developer Tooling track | 2026-04-26
 
-바이브코딩으로 생성된 **웹서비스 코드(Python · JS · TS)** 에서 **7종 보안 취약 패턴**을 탐지하고, 이미 설치된 **AI CLI(Claude Code / Codex / Gemini)** 로 자동 패치 후 배포 게이트를 여는 CLI 도구.
+SLAyer is a CLI tool that detects **seven security vulnerability patterns** in
+**vibe-coded web-service code (Python, JS, and TS)**, patches them through an already
+installed **AI CLI (Claude Code, Codex CLI, or Gemini CLI)**, and opens the deployment gate.
 
-`pip install slayer-sec` 한 줄로 설치. API 키 설정 없음. TUI 없음 — 순수 CLI.
+Install with one command: `pip install slayer-sec`. No API-key setup. No TUI - only a
+plain CLI.
 
-**Specification**: `spec.md` (상세 명세)
+**Specification:** `spec.md` (detailed requirements)
 
 ---
 
 ## Architecture
 
-단일 Python 패키지. plain 텍스트 CLI 출력.
-AI 호출은 직접 API 대신 **로컬 AI CLI 프로세스에 위임** — `anthropic` SDK 의존성 없음.
+SLAyer is a single Python package with plain-text CLI output. AI calls are delegated to a
+**local AI CLI process** instead of a direct API; there is no `anthropic` SDK dependency.
 
-```
+```text
 slayer/
-├── slayer/
-│   ├── cli.py              # entry point — slayer start / patch / model
-│   ├── models.py           # Pydantic: SLARule, Violation, ScanResult, PatchResult
-│   ├── ai_runner.py        # AI CLI 감지 (claude→codex→gemini) + 프롬프트 위임
-│   ├── scanner.py          # 파일 수집 + 분석기 디스패치
-│   ├── reporter.py         # text/json 출력 렌더링
-│   ├── rules.py            # DEFAULT_RULES_BY_ID
-│   ├── analyzers/
-│   │   ├── py_analyzer.py   # Python AST 분석 (AI 불필요)
-│   │   └── js_analyzer.py   # JS/TS regex 분석 (AI 불필요)
-│   └── patcher/
-│       └── llm_patcher.py   # 자동 패치 (AI CLI 위임, 언어 자동 감지)
-├── pyproject.toml
-├── demo_vuln.py             # Python 데모
-├── demo_vuln.js             # JS 데모
-└── spec.md
+|-- slayer/
+|   |-- cli.py              # entry point: slayer start / patch / model
+|   |-- models.py           # Pydantic: SLARule, Violation, ScanResult, PatchResult
+|   |-- ai_runner.py        # AI CLI detection (claude -> codex -> gemini) and prompt delegation
+|   |-- scanner.py          # file collection and analyzer dispatch
+|   |-- reporter.py         # text/json output rendering
+|   |-- rules.py            # DEFAULT_RULES_BY_ID
+|   |-- analyzers/
+|   |   |-- py_analyzer.py   # Python AST analysis; no AI required
+|   |   `-- js_analyzer.py   # JS/TS regex analysis; no AI required
+|   `-- patcher/
+|       `-- llm_patcher.py   # automatic patching through AI CLI delegation and language detection
+|-- pyproject.toml
+|-- demo_vuln.py             # Python demo
+|-- demo_vuln.js             # JS demo
+`-- spec.md
 ```
 
-**핵심 흐름**:
-1. `slayer start <path>` → AST/regex 스캔 → 위반 목록 plain 텍스트 출력
-2. `slayer patch <path>` → 스캔 → AI CLI 패치 → 재스캔 → Deployment Approved
-3. `slayer model [name]` → AI CLI 상태 확인 / .slayer.yml에 선호 AI 저장
+**Core flow:**
+
+1. `slayer start <path>` -> AST/regex scan -> print violation list as plain text.
+2. `slayer patch <path>` -> scan -> AI CLI patch -> rescan -> Deployment Approved.
+3. `slayer model [name]` -> inspect AI CLI status or save the preferred AI to `.slayer.yml`.
 
 ---
 
-## Key Constraints
+## Key constraints
 
-- 분석 대상: 웹서비스 코드 — `.py` · `.js` · `.jsx` · `.ts` · `.tsx`
-- **탐지 7종은 AI 없이 동작**: Python=AST 기반, JS/TS=regex 기반
-- **AI CLI 필요 작업**: 자동 패치만
-- **AI CLI 감지 순서**: `claude` → `codex` → `gemini` (설치된 첫 번째 사용)
-- **AI 선택**: `slayer model claude/codex/gemini` → `.slayer.yml`에 저장, patch 시 자동 적용
-- API 키 관리 코드 없음 — AI CLI의 기존 인증 사용
-- TUI 없음 — textual 의존성 없음
-- Exit codes: `0` = all pass, `1` = violations found, `2` = error
+- Analysis targets: web-service code with `.py`, `.js`, `.jsx`, `.ts`, or `.tsx` extensions.
+- The seven detection rules must work **without AI**: Python uses AST detection, JS/TS uses regex detection.
+- Automatic patching is the only feature that requires an AI CLI.
+- AI CLI detection order: `claude` -> `codex` -> `gemini` (use the first installed CLI).
+- AI selection: `slayer model claude/codex/gemini` saves the choice in `.slayer.yml`; `patch` uses it automatically.
+- Do not add API-key management code; use the existing authentication from the AI CLI.
+- Do not add a TUI or a `textual` dependency.
+- Exit codes: `0` = all pass, `1` = violations found, `2` = error.
 
 ---
 
 ## Commands
 
-### 개발 실행
+### Development run
 
 ```bash
 cd slayer
 pip install -e ".[dev]"
 
-# 스캔
+# Scan
 slayer start demo_vuln.py
 
-# JSON 출력
+# JSON output
 slayer start demo_vuln.py --format json
 
-# AI CLI 설정
+# Configure the AI CLI
 slayer model claude
 
-# 자동 패치
+# Automatic patching
 slayer patch demo_vuln.py
 ```
 
-### 빌드 / 배포
+### Build and distribution
 
 ```bash
 pip install build
@@ -88,52 +92,53 @@ python -m build
 pip install dist/slayer_sec-*.whl
 ```
 
-### 테스트
+### Tests
 
 ```bash
 pytest tests/ -v
 
-# 데모: 7개 위반 탐지
+# Demo: detect seven violations
 slayer start demo_vuln.py
 
-# 데모: 자동 패치
+# Demo: automatic patching
 slayer patch demo_vuln.py
-# → Patching via claude... → 🚀 Deployment Approved
+# -> Patching via claude... -> Deployment Approved
 ```
 
 ---
 
-## Data Models
+## Data models
 
 `slayer/models.py`:
 
-```
+```text
 SLARule     { id, name, description, raw_nl, rule_type, severity }
 Violation   { rule_id, rule_name, file, line, col, code_snippet, explanation }
 ScanResult  { rules[], violations[], pass_count, fail_count, deployable, scanned_files[], syntax_errors[] }
-PatchResult { patched_files[], diffs{}, remaining_violations[], deployable, ai_used }
+PatchResult { patched_files[], diffs{}, patch_explanations[], remaining_violations[], deployable, ai_used }
 ```
 
 `rule_type`: `NO_NETWORK | NO_EXEC | NO_HARDCODED_SECRETS | SQL_PARAM_BINDING | NO_DEBUG_MODE | NO_WEAK_RANDOM | NO_BARE_EXCEPT | CUSTOM`
 
 ---
 
-## Vibe Coding Ruleset (7종)
+## Vibe coding ruleset (seven classes)
 
-`slayer/analyzers/py_analyzer.py` + `js_analyzer.py` — AI 없이 결정적 탐지:
+`slayer/analyzers/py_analyzer.py` and `js_analyzer.py` provide deterministic detection without AI:
 
-| V# | 룰 | 탐지 대상 | Severity |
+| V# | Rule | Detection target | Severity |
 |----|-----|----------|----------|
-| V-01 | NO_HARDCODED_SECRETS | API 키·패스워드·토큰 리터럴 | critical |
-| V-02 | NO_NETWORK | 네트워크 라이브러리 임포트 + 메서드 호출 | critical |
-| V-03 | NO_EXEC | 쉘 실행 함수 + `shell=True` 패턴 | critical |
-| V-04 | SQL_PARAM_BINDING | f-string/템플릿 리터럴 + SQL 키워드 | high |
-| V-05 | NO_DEBUG_MODE | `DEBUG=True` / `debug:true` | high |
-| V-06 | NO_WEAK_RANDOM | `random.choice()` / `Math.random()` in security context | high |
-| V-07 | NO_BARE_EXCEPT | `except: pass` / 빈 `catch {}` | medium |
+| V-01 | NO_HARDCODED_SECRETS | API keys, passwords, and token literals | critical |
+| V-02 | NO_NETWORK | Network imports or network calls with unsafe targets | critical |
+| V-03 | NO_EXEC | Shell execution functions and `shell=True` patterns | critical |
+| V-04 | SQL_PARAM_BINDING | f-strings or template literals with SQL keywords | high |
+| V-05 | NO_DEBUG_MODE | `DEBUG=True` or `debug: true` | high |
+| V-06 | NO_WEAK_RANDOM | `random.choice()` or `Math.random()` in security contexts | high |
+| V-07 | NO_BARE_EXCEPT | `except: pass` or empty `catch {}` blocks | medium |
 
-패치 전략 (AI CLI, 언어 자동 감지):
-- NO_EXEC: Python → `shell=False` + 리스트, JS → `execFile("cmd", [arg])`
-- NO_DEBUG_MODE: Python → `os.environ.get("DEBUG","false")`, JS → `process.env.NODE_ENV`
-- NO_WEAK_RANDOM: Python → `secrets.token_hex()`, JS → `crypto.randomUUID()`
-- NO_BARE_EXCEPT: Python → `except Exception as e: logger.warning(e)`, JS → `catch(e){console.error(e)}`
+Patch strategy (AI CLI, language detected automatically):
+
+- NO_EXEC: Python -> `shell=False` with list arguments; JS -> `execFile("cmd", [arg])`.
+- NO_DEBUG_MODE: Python -> `os.environ.get("DEBUG", "false")`; JS -> `process.env.NODE_ENV`.
+- NO_WEAK_RANDOM: Python -> `secrets.token_hex()`; JS -> `crypto.randomUUID()`.
+- NO_BARE_EXCEPT: Python -> `except Exception as e: logger.warning(e)`; JS -> `catch(e){ console.error(e) }`.

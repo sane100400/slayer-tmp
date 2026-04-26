@@ -1,8 +1,8 @@
 # SLAyer Patch Quality Reference
 
-This reference turns `spec.md` into an implementation checklist for the patch-quality work:
+This reference turns `spec.md` into an implementation checklist for patch-quality work:
 reduce false-positive-driven patches, explain every patch in friendly language, and keep the
-CLI/backend/frontend results compatible with existing deploy gates.
+CLI/backend/frontend results compatible with existing deployment gates.
 
 ## Source-of-truth rules
 
@@ -11,21 +11,21 @@ use these identifiers for the CLI ruleset:
 
 | Rule | Friendly patch summary | Patch strategy from `spec.md` |
 | --- | --- | --- |
-| `NO_HARDCODED_SECRETS` | 하드코딩된 비밀값을 환경 변수 조회로 바꿨어요. | Python `os.environ.get("VAR", "")`; JS/TS `process.env.VAR ?? ""`. |
-| `NO_NETWORK` | 사용자 입력으로 가는 외부 호출을 차단하거나 허용된 주소로 제한했어요. | Python `raise NotImplementedError("외부 호출 차단")`; JS/TS `throw new Error("외부 호출 차단")`. |
-| `NO_EXEC` | 쉘 문자열 실행을 안전한 인수 리스트 실행으로 바꿨어요. | Python `shell=False` + list args; JS/TS `execFile("cmd", [arg], cb)`. |
-| `SQL_PARAM_BINDING` | 문자열로 만든 SQL을 파라미터 바인딩으로 바꿨어요. | Python `cursor.execute("... WHERE x=?", (val,))`; JS/TS `query("... WHERE x=$1", [val])`. |
-| `NO_DEBUG_MODE` | 배포 기본값에서 debug 모드가 꺼지도록 바꿨어요. | Python env-based debug flag; JS/TS `process.env.NODE_ENV !== "production"`. |
-| `NO_INSECURE_HASH` | MD5/SHA1 해싱을 SHA-256 이상 또는 비밀번호 전용 해싱으로 바꿨어요. | Python `hashlib.pbkdf2_hmac("sha256", ...)`; JS/TS `crypto.createHash("sha256")`. |
-| `NO_BARE_EXCEPT` | 예외를 조용히 삼키지 않고 기록하도록 바꿨어요. | Python `except Exception as e: logger.warning(e)`; JS/TS `catch(e){ console.error(e) }`. |
+| `NO_HARDCODED_SECRETS` | Replaced hard-coded secrets with environment variable lookups. | Python `os.environ.get("VAR", "")`; JS/TS `process.env.VAR ?? ""`. |
+| `NO_NETWORK` | Blocked external calls that flow from user input or constrained them to allowed addresses. | Python `raise NotImplementedError("External calls are blocked")`; JS/TS `throw new Error("External calls are blocked")`. |
+| `NO_EXEC` | Replaced shell-string execution with safe argument-list execution. | Python `shell=False` + list args; JS/TS `execFile("cmd", [arg], cb)`. |
+| `SQL_PARAM_BINDING` | Replaced string-built SQL with parameter binding. | Python `cursor.execute("... WHERE x=?", (val,))`; JS/TS `query("... WHERE x=$1", [val])`. |
+| `NO_DEBUG_MODE` | Made debug mode off by default in deployment settings. | Python env-based debug flag; JS/TS `process.env.NODE_ENV !== "production"`. |
+| `NO_WEAK_RANDOM` | Replaced predictable randomness with cryptographic randomness for security values. | Python `secrets.token_hex(32)`; JS/TS `crypto.randomUUID()`. |
+| `NO_BARE_EXCEPT` | Recorded exceptions instead of silently swallowing them. | Python `except Exception as e: logger.warning(e)`; JS/TS `catch(e){ console.error(e) }`. |
 
-Review note: older code paths may use backend names such as `WEAK_HASH` or rule experiments such
-as weak randomness. The public patch-quality contract should still present the spec-defined seven
+Review note: older code paths may use backend names such as `WEAK_HASH` or experiments such as
+`NO_INSECURE_HASH`. The public patch-quality contract should still present the current seven
 classes above unless a later spec revision changes the taxonomy.
 
 ## False-positive gate before patching
 
-The patcher must only send validated or likely-true findings to the AI CLI. A safe implementation
+The patcher must send only validated or likely-true findings to the AI CLI. A safe implementation
 uses these pre-patch gates:
 
 1. **Patch only listed violations.** The AI prompt must include the exact file, line, rule, snippet,
@@ -41,8 +41,8 @@ uses these pre-patch gates:
    calls is a patch candidate; ordinary strings mentioning SQL are not.
 6. **Debug findings are hard-coded deployment defaults.** `debug=True`, `DEBUG=True`, and JS
    `debug: true` are patch candidates; environment-derived flags are not.
-7. **Weak hash findings are MD5/SHA1 security use.** Prefer findings tied to password, token,
-   credential, or authentication context to avoid changing non-security checksums.
+7. **Weak-randomness findings need security context.** Prefer findings tied to passwords, tokens,
+   credentials, sessions, OTPs, or authentication context to avoid changing non-security randomness.
 8. **Bare exception findings should swallow errors.** Empty handlers and `pass`/empty `catch` blocks
    are patch candidates; handlers that log, raise, return an explicit failure, or narrow exceptions
    should not be patched.
@@ -66,9 +66,9 @@ Recommended item shape:
   "rule_id": "SQL_PARAM_BINDING",
   "rule_name": "SQL_PARAM_BINDING",
   "line": 13,
-  "title": "SQL을 파라미터 바인딩으로 바꿨어요",
-  "summary": "사용자 값을 SQL 문자열에 직접 붙이지 않고 DB 드라이버의 바인딩 인자로 전달하게 했어요.",
-  "guidance": "문자열 보간 SQL을 파라미터 바인딩으로 바꾸세요.",
+  "title": "Changed SQL to parameter binding",
+  "summary": "User values are passed as DB-driver binding arguments instead of being concatenated into the SQL string.",
+  "guidance": "Replace string-interpolated SQL with parameterized queries.",
   "reference": "spec.md#SQL_PARAM_BINDING"
 }
 ```
