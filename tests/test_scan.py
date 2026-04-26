@@ -101,6 +101,24 @@ def test_start_handles_syntax_error_without_crashing(tmp_path):
     assert any(violation.rule_name == 'NO_DEBUG_MODE' for violation in result.violations)
 
 
+def test_syntax_error_blocks_deployment(tmp_path):
+    broken = tmp_path / 'broken.py'
+    broken.write_text('def nope(:\n    pass\n', encoding='utf-8')
+
+    result = scan_path(tmp_path)
+
+    assert result.syntax_errors
+    assert result.deployable is False
+
+
+def test_syntax_error_exit_code(tmp_path):
+    broken = tmp_path / 'broken.py'
+    broken.write_text('def nope(:\n    pass\n', encoding='utf-8')
+
+    result = runner.invoke(app, ['start', str(broken)])
+    assert result.exit_code == 1
+
+
 def test_start_empty_directory_reports_no_supported_files(tmp_path):
     result = runner.invoke(app, ['start', str(tmp_path)])
     assert result.exit_code == 0

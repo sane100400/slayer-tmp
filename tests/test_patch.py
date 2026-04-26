@@ -104,15 +104,17 @@ def test_patch_cli_text_output_includes_friendly_explanations(tmp_path, fake_ai_
     assert '비밀값을 코드 밖으로 옮겼어요' in result.output
 
 
-def test_patch_cli_requires_slayer_yml(tmp_path, fake_ai_env, monkeypatch):
+def test_patch_cli_falls_back_to_auto_without_slayer_yml(tmp_path, fake_ai_env, monkeypatch):
     target = tmp_path / 'demo.py'
     target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    patched_code = 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n'
+    monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', patched_code)
     monkeypatch.chdir(tmp_path)
 
     result = runner.invoke(app, ['patch', str(target)])
 
-    assert result.exit_code == 2
-    assert '.slayer.yml에 ai 설정이 필요합니다' in result.stderr
+    assert result.exit_code == 0
+    assert 'os.environ.get' in target.read_text(encoding='utf-8')
 
 
 def test_patch_cli_rejects_invalid_slayer_yml_ai(tmp_path, fake_ai_env, monkeypatch):

@@ -45,11 +45,11 @@ def _read_saved_ai() -> str | None:
 
 def _read_required_ai() -> str:
     if not _CONFIG_FILE.exists():
-        raise SlayerConfigError('.slayer.yml에 ai 설정이 필요합니다. `slayer model codex`처럼 먼저 모델을 저장하세요.')
+        return 'auto'
 
     value = _read_ai_value()
     if value is None:
-        raise SlayerConfigError('.slayer.yml에 ai: claude|codex|gemini|auto 설정이 필요합니다.')
+        return 'auto'
     if value not in _VALID_AI_CHOICES:
         raise SlayerConfigError(f'.slayer.yml의 ai 값이 잘못되었습니다: {value!r}. claude, codex, gemini, auto 중 하나를 사용하세요.')
     return value
@@ -97,7 +97,7 @@ def start(
         raise typer.Exit(code=2)
 
     _print_scan(target, result, output_format)
-    raise typer.Exit(code=1 if result.violations else 0)
+    raise typer.Exit(code=0 if result.deployable else 1)
 
 
 @app.command()

@@ -11,6 +11,7 @@ from rich.padding import Padding
 from rich.columns import Columns
 
 from slayer.models import PatchResult, ScanResult
+from slayer.redact import redact_secrets
 from slayer.rules import RULE_DETAILS, DEFAULT_RULES_BY_ID
 
 _SEVERITY_CONF: dict[str, tuple[str, str, str]] = {
@@ -88,9 +89,9 @@ def print_scan_rich(target: str | Path, result: ScanResult, console: Console | N
             line.append(f'  {rel}:{v.line}', style='dim')
             c.print(Padding(line, (1, 2, 0, 2)))
 
-            # Code snippet box
+            # Code snippet box (secrets masked before display)
             if v.code_snippet:
-                snippet = v.code_snippet.strip()[:120]
+                snippet = redact_secrets(v.code_snippet.strip())[:120]
                 c.print(Padding(
                     Panel(f'[dim]{snippet}[/]', border_style='dim', padding=(0, 1), expand=False),
                     (0, 4),
@@ -189,7 +190,7 @@ def render_scan_text(target: str | Path, result: ScanResult) -> str:
         lines.append(f'⚠ syntax error  {location}  {issue.message}')
     for violation in result.violations:
         lines.append(
-            f"✗  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {violation.code_snippet.strip()}"
+            f"✗  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {redact_secrets(violation.code_snippet.strip())}"
         )
         details = RULE_DETAILS.get(violation.rule_id, {})
         if details.get('why'):

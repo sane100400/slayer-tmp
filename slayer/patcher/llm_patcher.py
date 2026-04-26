@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 import difflib
 import json
-import re
 import shutil
 import subprocess
 import tempfile
@@ -11,32 +10,15 @@ from pathlib import Path
 
 from slayer.ai_runner import detect_ai_cli, extract_code, run_ai
 from slayer.models import AIChoice, PatchExplanation, PatchResult, Violation
+from slayer.redact import redact_secrets
 from slayer.rules import RULE_GUIDANCE, patch_explanation_for
 from slayer.scanner import detect_language, group_violations_by_file, scan_path
 
 MAX_PATCH_ROUNDS = 2
-SECRET_ASSIGN_RE = re.compile(
-    r'(?ix)(\b(?:password|passwd|pwd|api[_-]?key|apikey|secret|token|credential|access[_-]?key)\b\s*=\s*["\'])([^"\']{4,})(["\'])'
-)
-PROVIDER_SECRET_RE = re.compile(r'sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{36}|AKIA[0-9A-Z]{16}')
 
 
 class PatchValidationError(RuntimeError):
     pass
-
-
-def _mask_secret(value: str) -> str:
-    if len(value) <= 8:
-        return '***REDACTED***'
-    return f'{value[:4]}...{value[-4:]}'
-
-
-def redact_secrets(source: str) -> str:
-    def replace_assignment(match: re.Match[str]) -> str:
-        return f"{match.group(1)}{_mask_secret(match.group(2))}{match.group(3)}"
-
-    redacted = SECRET_ASSIGN_RE.sub(replace_assignment, source)
-    return PROVIDER_SECRET_RE.sub(lambda match: _mask_secret(match.group(0)), redacted)
 
 
 def _unified_diff(original: str, patched: str, file_path: str) -> str:

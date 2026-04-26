@@ -85,12 +85,13 @@ def scan_path(target: str | Path, rules: list[SLARule] | None = None) -> ScanRes
 
     failed_rule_ids = {violation.rule_id for violation in violations}
     pass_count = sum(1 for rule in rule_set if rule.id not in failed_rule_ids)
+    deployable = len(violations) == 0 and len(syntax_errors) == 0
     return ScanResult(
         rules=rule_set,
         violations=violations,
         pass_count=pass_count,
         fail_count=len(violations),
-        deployable=len(violations) == 0,
+        deployable=deployable,
         scanned_files=[str(path) for path in files],
         syntax_errors=syntax_errors,
     )

@@ -6,13 +6,24 @@
 바이브코딩(Claude / GPT / Cursor)으로 생성된 **웹서비스 코드(Python · JS · TS)** 에서  
 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI로 자동 패치 후 배포 게이트를 여는 도구.
 
+## Quickstart
+
 ```bash
-# 개발 설치
 pip install -e ".[dev]"
 
-slayer start .    # 스캔 → 위반 목록 출력
-slayer patch .    # 스캔 → 자동 패치 → 🚀 Deployment Approved
+slayer start demo_vuln.py   # scan → violation list
+slayer patch demo_vuln.py   # scan → auto-patch → 🚀 Deployment Approved
+slayer start demo_vuln.py   # rescan → clean
 ```
+
+1. `slayer start` detects security issues without any API key or config.
+2. `slayer patch` calls your locally installed Claude Code / Codex / Gemini CLI to fix them.
+3. SLAyer validates the patch syntax, rescans, and confirms deployment readiness.
+
+> **Note:** This repo also contains an experimental desktop/web prototype (`src-tauri/`, `src/`).  
+> The hackathon submission focuses on the CLI workflow in `slayer/`.
+
+---
 
 **API 키 없음.** Claude Code / Codex / Gemini가 이미 설치되어 있으면 바로 패치.  
 `slayer start`는 AI 없이도 동작. `slayer patch`만 AI CLI 하나가 필요.
