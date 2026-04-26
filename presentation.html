@@ -685,25 +685,36 @@ code.inline{
   .paper-grid{grid-template-columns:1fr}
 }
 
+/* ── WORD BREAK ── */
+*{word-break:keep-all;overflow-wrap:break-word}
+
 /* ── PRINT / PDF EXPORT ── */
-@page{margin:0;size:landscape}
+@page{margin:0;size:1920px 1080px}
 @media print{
-  html{
+  html,body{
+    width:1920px;
+    height:1080px;
     scroll-snap-type:none;
     background-image:none;
-  }
-  body{
-    background-image:none;
+    overflow:hidden;
   }
   .nav,.slide-num{display:none!important}
   .slide{
-    height:100vh;
-    max-height:100vh;
+    width:1920px;
+    height:1080px;
+    max-height:1080px;
     page-break-after:always;
     break-after:page;
     page-break-inside:avoid;
     overflow:hidden;
     background-attachment:initial;
+    display:flex;
+    align-items:center;
+  }
+  .slide-inner{
+    transform:none!important;
+    max-height:1080px;
+    overflow:hidden;
   }
   .slide::before{
     background-attachment:initial;
