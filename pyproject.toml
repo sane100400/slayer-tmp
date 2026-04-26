@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slayer-sec"
+version = "0.1.0"
+description = "SLAyer CLI for deterministic web-service security scanning and AI-CLI patching"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "SLAyer Team" }]
+dependencies = [
+  "pydantic>=2.9,<3",
+  "typer>=0.12,<1",
+  "rich>=13.7,<14",
+  "textual>=0.61,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+]
+
+[project.scripts]
+slayer = "slayer.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["slayer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

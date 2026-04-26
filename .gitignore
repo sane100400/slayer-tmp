@@ -40,3 +40,8 @@ tools/*_pattern_report.json
 *.njsproj
 *.sln
 *.sw?
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
