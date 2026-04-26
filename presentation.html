@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SLAyer — Presentation</title>
+<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:   #0c0908;
+  --bg1:  #131009;
+  --bg2:  #1b1713;
+  --line: #2a2520;
+  --R:    #d31515;
+  --R2:   #f02424;
+  --Rfog: rgba(211,21,21,.09);
+  --Rrim: rgba(211,21,21,.22);
+  --G:    #0ea040;
+  --G2:   #1acc58;
+  --Gfog: rgba(14,160,64,.08);
+  --Grim: rgba(26,204,88,.18);
+  --amber: #e8a020;
+  --amberfog: rgba(232,160,32,.10);
+  --T:  #eee7dc;
+  --T2: #a09080;
+  --T3: #5a5048;
+  --T4: #2e2820;
+  --f:  'Pretendard Variable','Pretendard',-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-snap-type:y mandatory}
+body{
+  background:var(--bg);
+  color:var(--T);
+  font-family:var(--f);
+  line-height:1.6;
+  overflow-x:hidden;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px);
+  background-size:100% 40px;
+  background-attachment:fixed;
+}
+
+/* ── SLIDE ── */
+.slide{
+  min-height:100svh;
+  scroll-snap-align:start;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+}
+.slide::before{
+  content:'';
+  position:absolute;inset:0;z-index:0;
+  background:var(--bg);
+}
+.slide-inner{
+  position:relative;z-index:1;
+  width:100%;
+  padding:80px 7vw;
+  max-width:1400px;
+  margin:0 auto;
+}
+
+/* ── NAV DOTS ── */
+.nav{
+  position:fixed;
+  right:28px;top:50%;
+  transform:translateY(-50%);
+  z-index:100;
+  display:flex;flex-direction:column;gap:10px;
+}
+.nav a{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--T3);
+  display:block;
+  transition:background .2s,transform .2s;
+}
+.nav a:hover,.nav a.active{background:var(--R);transform:scale(1.4)}
+
+/* ── SLIDE NUMBER ── */
+.slide-num{
+  position:absolute;
+  bottom:32px;right:7vw;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--T3);
+  letter-spacing:.12em;
+}
+
+/* ── TYPOGRAPHY ── */
+.overline{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--T3);
+  margin-bottom:20px;
+}
+.overline span{color:var(--R)}
+
+h1.hero{
+  font-size:clamp(52px,7vw,96px);
+  font-weight:800;
+  line-height:1.0;
+  letter-spacing:-.03em;
+  margin-bottom:28px;
+}
+h1.hero em{
+  font-style:normal;
+  color:var(--R);
+}
+
+h2.section-title{
+  font-size:clamp(32px,4vw,52px);
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:-.02em;
+  margin-bottom:40px;
+}
+h2.section-title em{font-style:normal;color:var(--R)}
+
+.lead{
+  font-size:clamp(16px,1.6vw,20px);
+  color:var(--T2);
+  max-width:680px;
+  line-height:1.75;
+}
+
+/* ── STAT GRID ── */
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:2px;
+  margin:48px 0;
+}
+.stat-card{
+  background:var(--bg1);
+  border:1px solid var(--Rrim);
+  padding:32px 28px;
+}
+.stat-num{
+  font-family:var(--mono);
+  font-size:clamp(36px,4vw,56px);
+  font-weight:600;
+  color:var(--R2);
+  line-height:1;
+  margin-bottom:10px;
+}
+.stat-label{
+  font-size:13px;
+  color:var(--T2);
+  line-height:1.5;
+}
+.stat-source{
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--T3);
+  margin-top:8px;
+}
+
+/* ── CWE TABLE ── */
+.cwe-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+  margin:40px 0;
+}
+.cwe-table th{
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--T3);
+  padding:12px 16px;
+  text-align:left;
+  border-bottom:1px solid var(--line);
+}
+.cwe-table td{
+  padding:14px 16px;
+  border-bottom:1px solid var(--line);
+  vertical-align:top;
+}
+.cwe-table tr:hover td{background:var(--bg1)}
+
+.badge{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:10px;
+  padding:2px 8px;
+  border-radius:2px;
+  letter-spacing:.05em;
+}
+.badge-crit{background:var(--Rfog);color:var(--R2);border:1px solid var(--Rrim)}
+.badge-high{background:var(--amberfog);color:var(--amber);border:1px solid rgba(232,160,32,.25)}
+.badge-med{background:rgba(14,160,64,.08);color:var(--G2);border:1px solid var(--Grim)}
+
+.cwe-id{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--T3);
+}
+
+/* ── PAPER CARDS ── */
+.paper-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:16px;
+  margin:40px 0;
+}
+.paper-card{
+  background:var(--bg1);
+  border:1px solid var(--line);
+  padding:24px;
+  position:relative;
+}
+.paper-card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;
+  width:3px;height:100%;
+  background:var(--R);
+}
+.paper-year{
+  font-family:var(--mono);
+  font-size:10px;
+  color:var(--T3);
+  margin-bottom:8px;
+  letter-spacing:.1em;
+}
+.paper-title{
+  font-size:14px;
+  font-weight:600;
+  color:var(--T);
+  margin-bottom:10px;
+  line-height:1.4;
+}
+.paper-finding{
+  font-size:13px;
+  color:var(--T2);
+  line-height:1.6;
+}
+.paper-finding strong{color:var(--R2)}
+
+/* ── FLOW DIAGRAM ── */
+.flow{
+  display:flex;
+  align-items:center;
+  gap:0;
+  margin:48px 0;
+  flex-wrap:wrap;
+  gap:2px;
+}
+.flow-step{
+  flex:1;
+  min-width:140px;
+  background:var(--bg2);
+  border:1px solid var(--line);
+  padding:20px 16px;
+  text-align:center;
+}
+.flow-step.highlight{
+  background:var(--Rfog);
+  border-color:var(--Rrim);
+}
+.flow-icon{
+  font-size:24px;
+  margin-bottom:8px;
+}
+.flow-label{
+  font-size:12px;
+  color:var(--T2);
+  line-height:1.4;
+}
+.flow-arrow{
+  color:var(--T3);
+  font-size:18px;
+  padding:0 4px;
+}
+
+/* ── TBD BOX ── */
+.tbd-box{
+  background:var(--bg2);
+  border:1px dashed var(--T3);
+  border-radius:4px;
+  padding:32px;
+  text-align:center;
+  margin:40px 0;
+}
+.tbd-label{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.2em;
+  color:var(--T3);
+  margin-bottom:12px;
+}
+.tbd-text{
+  font-size:15px;
+  color:var(--T2);
+  line-height:1.7;
+}
+
+/* ── QUOTE ── */
+.quote-block{
+  border-left:3px solid var(--R);
+  padding:24px 32px;
+  margin:40px 0;
+  background:var(--Rfog);
+}
+.quote-text{
+  font-size:clamp(16px,2vw,22px);
+  font-weight:500;
+  line-height:1.6;
+  color:var(--T);
+  margin-bottom:12px;
+}
+.quote-source{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--T3);
+}
+
+/* ── DIVIDER ── */
+.rule{
+  border:none;
+  border-top:1px solid var(--line);
+  margin:40px 0;
+}
+
+/* ── TAG ── */
+.tag{
+  display:inline-block;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.1em;
+  padding:3px 10px;
+  border:1px solid var(--line);
+  color:var(--T3);
+  margin-right:6px;
+  margin-bottom:6px;
+}
+
+/* ── SLIDE-SPECIFIC ── */
+
+/* S0: Cover */
+.s0-logo{
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:.25em;
+  color:var(--T3);
+  margin-bottom:60px;
+}
+.s0-logo span{color:var(--R)}
+.s0-sub{
+  font-size:clamp(15px,1.5vw,18px);
+  color:var(--T2);
+  margin-top:24px;
+  max-width:560px;
+}
+.s0-meta{
+  margin-top:80px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--T3);
+  display:flex;
+  gap:32px;
+  flex-wrap:wrap;
+}
+.s0-meta span{display:flex;align-items:center;gap:8px}
+.s0-meta span::before{
+  content:'';
+  width:4px;height:4px;
+  background:var(--R);
+  display:block;
+}
+
+/* S1: Problem — why vibe coding is dangerous */
+.risk-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:2px;
+  margin:40px 0;
+}
+.risk-item{
+  background:var(--bg1);
+  padding:28px;
+  border-left:3px solid var(--R);
+}
+.risk-item h4{
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:8px;
+  color:var(--T);
+}
+.risk-item p{
+  font-size:13px;
+  color:var(--T2);
+  line-height:1.6;
+}
+
+/* S3: methodology */
+.method-steps{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:2px;
+  margin:48px 0;
+}
+.method-step{
+  padding:28px 20px;
+  background:var(--bg1);
+  border-top:2px solid var(--line);
+  position:relative;
+}
+.method-step.active{border-top-color:var(--R)}
+.method-n{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--T3);
+  margin-bottom:12px;
+}
+.method-title{
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:8px;
+}
+.method-desc{
+  font-size:12px;
+  color:var(--T2);
+  line-height:1.5;
+}
+
+@media(max-width:768px){
+  .risk-row{grid-template-columns:1fr}
+  .method-steps{grid-template-columns:1fr 1fr}
+  .stat-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV DOTS -->
+<nav class="nav">
+  <a href="#s0" title="Cover"></a>
+  <a href="#s1" title="Problem"></a>
+  <a href="#s2" title="Research"></a>
+  <a href="#s3" title="Methodology"></a>
+  <a href="#s4" title="Solution"></a>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     S0  COVER
+══════════════════════════════════════════════════ -->
+<section class="slide" id="s0">
+  <div class="slide-inner">
+    <div class="s0-logo"><span>SLA</span>yer</div>
+
+    <div class="overline"><span>//</span> CMUX × AIM Hackathon 2026 — Developer Tooling</div>
+
+    <h1 class="hero">
+      바이브코딩의<br>
+      <em>보안 부채</em>를<br>
+      딸깍 하나로.
+    </h1>
+
+    <p class="s0-sub">
+      AI 코드 생성 도구로 만들어진 Python 웹서비스 코드에서
+      <strong>데이터 기반 7대 취약 패턴</strong>을 탐지하고,
+      이미 설치된 AI CLI로 즉시 패치하는 TUI 도구.
+    </p>
+
+    <div class="s0-meta">
+      <span>pip install slayer-sec</span>
+      <span>slayer start .</span>
+      <span>slayer patch .</span>
+    </div>
+  </div>
+  <div class="slide-num">00 / 04</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     S1  PROBLEM — 바이브코딩 보안 위기
+══════════════════════════════════════════════════ -->
+<section class="slide" id="s1">
+  <div class="slide-inner">
+    <div class="overline"><span>01</span> — Problem Statement</div>
+    <h2 class="section-title">
+      바이브코딩은 빠르다.<br>
+      그리고 <em>위험하다.</em>
+    </h2>
+
+    <!-- Key stats from papers -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-num">55.8%</div>
+        <div class="stat-label">LLM 생성 코드 산출물 중<br>최소 1개 이상 취약점 포함</div>
+        <div class="stat-source">Blain & Noiseux, arXiv:2604.05292 (2026)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">+22%</div>
+        <div class="stat-label">바이브코딩 결과물이<br>수동 작성 코드 대비 더 많은 취약점</div>
+        <div class="stat-source">Samsyudin (2025)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">16–18%</div>
+        <div class="stat-label">AI 생성 Python 코드의<br>취약점 비율 (언어 중 최고)</div>
+        <div class="stat-source">Schreiber & Tippe (2025) — 7,703 파일 분석</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">77종</div>
+        <div class="stat-label">AI 생성 Python 코드에서<br>발견된 서로 다른 CWE 타입</div>
+        <div class="stat-source">Schreiber & Tippe (2025)</div>
+      </div>
+    </div>
+
+    <!-- Why vibe coding is risky -->
+    <div class="risk-row">
+      <div class="risk-item">
+        <h4>"일단 동작하게" 프롬프트</h4>
+        <p>보안 컨텍스트 없이 기능 구현 최우선. 인증·검증 로직은 프롬프트에 명시하지 않으면 생성되지 않는다.</p>
+      </div>
+      <div class="risk-item">
+        <h4>오래된 튜토리얼 데이터</h4>
+        <p>LLM 훈련 데이터에는 f-string SQL, MD5 해싱, pickle 직렬화 같은 구식 패턴이 다수 포함되어 있다.</p>
+      </div>
+      <div class="risk-item">
+        <h4>개발 예제 그대로 배포</h4>
+        <p><code style="font-family:var(--mono);font-size:12px;color:var(--R2)">DEBUG=True</code>, 하드코딩 크레덴셜, <code style="font-family:var(--mono);font-size:12px;color:var(--R2)">verify=False</code> 등 개발 편의 설정이 프로덕션에 그대로 올라간다.</p>
+      </div>
+      <div class="risk-item">
+        <h4>"에러 없애줘" 프롬프트</h4>
+        <p><code style="font-family:var(--mono);font-size:12px;color:var(--R2)">except: pass</code> — 에러를 조용히 삼키는 패턴. 보안 이벤트 감지 불가.</p>
+      </div>
+    </div>
+
+    <div class="quote-block">
+      <div class="quote-text">
+        "LLM이 생성한 코드의 취약점을 스스로 경고하는 비율은 <strong>12.6%~40%</strong>에 불과하다.
+        모델은 자신이 만든 취약점을 대부분 인지하지 못한다."
+      </div>
+      <div class="quote-source">arXiv:2502.14202 (2025) — LLM Self-Detection Limitations</div>
+    </div>
+  </div>
+  <div class="slide-num">01 / 04</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     S2  RESEARCH — 학술 근거 & CWE 매핑
+══════════════════════════════════════════════════ -->
+<section class="slide" id="s2">
+  <div class="slide-inner">
+    <div class="overline"><span>02</span> — Research Background</div>
+    <h2 class="section-title">
+      데이터로 증명된<br>
+      <em>반복 취약 패턴</em>
+    </h2>
+
+    <p class="lead">
+      2021~2026년 7편의 독립적 연구가 동일한 패턴을 반복 관찰했다.
+      SLAyer의 탐지 룰셋은 이 연구들과 CWE(Common Weakness Enumeration)에
+      직접 매핑된 <strong>데이터 기반 룰셋</strong>이다.
+    </p>
+
+    <!-- Paper cards -->
+    <div class="paper-grid">
+      <div class="paper-card">
+        <div class="paper-year">2026 · arXiv:2604.05292</div>
+        <div class="paper-title">Broken by Default — Formal Verification Study</div>
+        <div class="paper-finding">7개 주요 LLM, 3,500개 코드 산출물 분석.<br><strong>GPT-4o: 62.4% 취약점율. 전 모델 D등급 이하.</strong></div>
+      </div>
+      <div class="paper-card">
+        <div class="paper-year">2025 · Schreiber & Tippe</div>
+        <div class="paper-title">Security Vulnerabilities in AI-Generated Code</div>
+        <div class="paper-finding">GitHub 7,703 파일 분석.<br><strong>Python 16~18.5%, 77종 CWE 식별.</strong></div>
+      </div>
+      <div class="paper-card">
+        <div class="paper-year">2025 · Samsyudin</div>
+        <div class="paper-title">Vibe Coding and AI-Led Conversational Programming</div>
+        <div class="paper-finding">바이브코딩 결과물 vs 수동 작성 직접 비교.<br><strong>잠재 취약점 22% 더 높음.</strong></div>
+      </div>
+      <div class="paper-card">
+        <div class="paper-year">2025 · Cotroneo et al.</div>
+        <div class="paper-title">Human-Written vs. AI-Generated Code</div>
+        <div class="paper-finding">50만개 코드 샘플(Python·Java) 비교.<br><strong>AI 생성 코드가 더 높은 보안 위험도 보유.</strong></div>
+      </div>
+      <div class="paper-card">
+        <div class="paper-year">2025 · Waseem et al.</div>
+        <div class="paper-title">Vibe Coding in Practice</div>
+        <div class="paper-finding">다중 프로젝트 분석.<br><strong>970개 보안 문제 감지.</strong></div>
+      </div>
+      <div class="paper-card">
+        <div class="paper-year">2021 · Pearce et al.</div>
+        <div class="paper-title">Asleep at the Keyboard? — GitHub Copilot</div>
+        <div class="paper-finding">Copilot 초기 분석. CWE Top 25 집중.<br><strong>~40% 생성 코드에 취약점 포함.</strong></div>
+      </div>
+    </div>
+
+    <hr class="rule">
+
+    <!-- CWE mapping table -->
+    <p style="font-family:var(--mono);font-size:11px;color:var(--T3);letter-spacing:.15em;text-transform:uppercase;margin-bottom:16px;">
+      문헌에서 반복 관찰된 CWE — <span style="color:var(--amber)">SLAyer 탐지 후보 룰셋 (데이터셋 분석 후 최종 확정)</span>
+    </p>
+
+    <table class="cwe-table">
+      <thead>
+        <tr>
+          <th>CWE</th>
+          <th>취약점 유형</th>
+          <th>Severity</th>
+          <th>바이브코딩 원인</th>
+          <th>관련 연구</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cwe-id">CWE-798</td>
+          <td>하드코딩 크레덴셜</td>
+          <td><span class="badge badge-crit">Critical</span></td>
+          <td>"일단 예시로" 생성 후 미교체</td>
+          <td>Schreiber (2025), 상위 빈도</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-918</td>
+          <td>Server-Side Request Forgery</td>
+          <td><span class="badge badge-crit">Critical</span></td>
+          <td>URL 검증 없이 외부 API 호출</td>
+          <td>Copilot 연구 (2021), 40%</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-94</td>
+          <td>Code Injection (eval/exec)</td>
+          <td><span class="badge badge-crit">Critical</span></td>
+          <td>동적 실행으로 기능 구현 단축</td>
+          <td>Samsyudin +22% (2025)</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-89</td>
+          <td>SQL Injection</td>
+          <td><span class="badge badge-high">High</span></td>
+          <td>오래된 튜토리얼 f-string 패턴</td>
+          <td>Schreiber CWE Top (2025)</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-16</td>
+          <td>Security Misconfiguration (DEBUG)</td>
+          <td><span class="badge badge-high">High</span></td>
+          <td>개발 예제 그대로 배포</td>
+          <td>Waseem 970건 (2025)</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-327</td>
+          <td>Weak Cryptographic Algorithm</td>
+          <td><span class="badge badge-high">High</span></td>
+          <td>구식 튜토리얼의 MD5/SHA1 패턴</td>
+          <td>Cotroneo 500K (2025)</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-390</td>
+          <td>Detection of Error Without Action</td>
+          <td><span class="badge badge-med">Medium</span></td>
+          <td>"에러 없애줘" 프롬프트 결과</td>
+          <td>반복 관찰 패턴</td>
+        </tr>
+        <tr>
+          <td class="cwe-id" style="color:var(--amber)">TBD</td>
+          <td style="color:var(--T3)">데이터셋 분석 후 추가 예정</td>
+          <td><span class="badge" style="border-color:var(--T3);color:var(--T3)">TBD</span></td>
+          <td style="color:var(--T3)">관측 데이터 기반으로 확정</td>
+          <td style="color:var(--T3)">—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="tbd-box">
+      <div class="tbd-label">// 최종 7대 취약점 — 미확정</div>
+      <div class="tbd-text">
+        위 후보 CWE는 문헌에서 반복 관찰된 패턴이다.<br>
+        <strong>최종 7종은 수천 개 바이브코딩 데이터셋에서 실제 관측된 빈도로만 결정된다.</strong><br>
+        데이터가 없으면 룰도 없다.
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">02 / 04</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     S3  METHODOLOGY — 어떻게 뽑는가
+══════════════════════════════════════════════════ -->
+<section class="slide" id="s3">
+  <div class="slide-inner">
+    <div class="overline"><span>03</span> — Methodology</div>
+    <h2 class="section-title">
+      우리가 <em>OWASP가 되는</em><br>방법
+    </h2>
+
+    <p class="lead">
+      기존 보안 도구는 일반 개발자 코드를 기준으로 만들어졌다.
+      SLAyer는 <strong>바이브코딩 결과물만을 대상으로</strong> 패턴을 관측하고,
+      빈도·영향도·수정 가능성을 기준으로 7종을 선별한다.
+    </p>
+
+    <div class="method-steps">
+      <div class="method-step active">
+        <div class="method-n">STEP 01</div>
+        <div class="method-title">데이터 수집</div>
+        <div class="method-desc">
+          GitHub Topics<br>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--R2)">built-with-cursor<br>built-with-claude<br>vibe-coding</code><br><br>
+          Python 웹서비스<br>Flask · FastAPI · Django<br>수천 개 파일
+        </div>
+      </div>
+      <div class="method-step active">
+        <div class="method-n">STEP 02</div>
+        <div class="method-title">AST 전수 분석</div>
+        <div class="method-desc">
+          전체 파일에 대해<br>결정적 AST 분석<br>패턴 후보별<br>발생 빈도 카운팅
+        </div>
+      </div>
+      <div class="method-step active">
+        <div class="method-n">STEP 03</div>
+        <div class="method-title">RAG 인덱싱</div>
+        <div class="method-desc">
+          ChromaDB에<br>코드 청크 임베딩<br>패턴별 대표<br>예시 검색
+        </div>
+      </div>
+      <div class="method-step active">
+        <div class="method-n">STEP 04</div>
+        <div class="method-title">AI 시맨틱 분석</div>
+        <div class="method-desc">
+          로컬 AI CLI로<br>패턴 원인·위험도<br>시맨틱 인사이트<br>추출
+        </div>
+      </div>
+      <div class="method-step active">
+        <div class="method-n">STEP 05</div>
+        <div class="method-title">7종 확정</div>
+        <div class="method-desc">
+          관측 빈도<br>+ CWE 영향도<br>+ 자동 패치 가능성<br>3축으로 선별
+        </div>
+      </div>
+    </div>
+
+    <div class="quote-block">
+      <div class="quote-text">
+        "bandit · semgrep은 모든 개발자 코드를 대상으로 한다.
+        SLAyer는 <strong>AI가 반복적으로 저지르는 실수</strong>에만 집중한다."
+      </div>
+      <div class="quote-source">SLAyer — 차별화 포인트</div>
+    </div>
+
+    <hr class="rule">
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <span class="tag">bandit 대비: AI 특화 룰셋</span>
+      <span class="tag">semgrep 대비: 설치 0줄</span>
+      <span class="tag">sonarqube 대비: pip 한 줄</span>
+      <span class="tag">snyk 대비: API 키 없음</span>
+    </div>
+  </div>
+  <div class="slide-num">03 / 04</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     S4  SOLUTION — SLAyer
+══════════════════════════════════════════════════ -->
+<section class="slide" id="s4">
+  <div class="slide-inner">
+    <div class="overline"><span>04</span> — Solution</div>
+    <h2 class="section-title">
+      <em>slayer start .</em><br>
+      그것만으로 충분하다.
+    </h2>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-icon">📦</div>
+        <div class="flow-label"><code style="font-family:var(--mono);font-size:11px">pip install slayer-sec</code></div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step highlight">
+        <div class="flow-icon">🔬</div>
+        <div class="flow-label"><code style="font-family:var(--mono);font-size:11px">slayer start .</code><br>AST 스캔 + TUI</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-icon">⚠️</div>
+        <div class="flow-label">취약점 위치<br>코드 컨텍스트 확인</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step highlight">
+        <div class="flow-icon">🤖</div>
+        <div class="flow-label"><kbd style="font-family:var(--mono);font-size:13px;background:var(--bg2);padding:2px 8px;border:1px solid var(--line)">f</kbd><br>AI CLI 자동 패치</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-icon">🚀</div>
+        <div class="flow-label">Deployment<br>Approved</div>
+      </div>
+    </div>
+
+    <div class="stat-grid" style="margin-top:0">
+      <div class="stat-card">
+        <div class="stat-num" style="font-size:28px;color:var(--G2)">0</div>
+        <div class="stat-label">SLAyer 자체 설정<br>API 키, config 파일, 로그인</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="font-size:28px">2</div>
+        <div class="stat-label">명령어 전부<br><code style="font-family:var(--mono);font-size:12px">start</code> · <code style="font-family:var(--mono);font-size:12px">patch</code></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="font-size:28px">3</div>
+        <div class="stat-label">지원 AI CLI<br>claude · codex · gemini</div>
+      </div>
+      <div class="stat-card" style="background:var(--Rfog);border-color:var(--Rrim)">
+        <div class="stat-num" style="font-size:28px;color:var(--amber)">TBD</div>
+        <div class="stat-label">데이터 기반 확정 예정<br>바이브코딩 7대 취약점</div>
+      </div>
+    </div>
+
+    <hr class="rule">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
+      <div>
+        <div class="overline" style="margin-bottom:8px">Prerequisites</div>
+        <p style="font-size:14px;color:var(--T2)">
+          Claude Code / Codex CLI / Gemini CLI 중 하나가 이미 설치된 환경.<br>
+          바이브코더라면 이미 있다.
+        </p>
+      </div>
+      <div style="font-family:var(--mono);font-size:13px;color:var(--T3);text-align:right">
+        <div style="color:var(--T2);margin-bottom:4px">github.com/sane100400/SLAyer</div>
+        <div>CMUX × AIM · 2026-04-26</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04 / 04</div>
+</section>
+
+<script>
+// Nav dot active state
+const slides = document.querySelectorAll('.slide');
+const dots = document.querySelectorAll('.nav a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      dots.forEach(d => d.classList.remove('active'));
+      const dot = document.querySelector(`.nav a[href="#${id}"]`);
+      if (dot) dot.classList.add('active');
+    }
+  });
+}, { threshold: 0.5 });
+slides.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
