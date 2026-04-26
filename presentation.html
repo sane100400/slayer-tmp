@@ -65,9 +65,10 @@ body{
 .slide-inner{
   position:relative;z-index:2;
   width:100%;
-  padding:72px 7vw;
+  padding:28px 5vw;
   max-width:1440px;
   margin:0 auto;
+  transform-origin:top center;
 }
 
 /* ── LOGOTYPE ── */
@@ -252,52 +253,53 @@ body{
 /* ── TYPOGRAPHY ── */
 h1.hero{
   font-family:var(--display);
-  font-size:clamp(60px,8.5vw,112px);
+  font-size:clamp(44px,6.5vw,84px);
   font-weight:800;
   line-height:.95;
   letter-spacing:-.04em;
-  margin-bottom:32px;
+  margin-bottom:20px;
 }
 h1.hero em{font-style:normal;color:var(--R)}
 
 h2.section-title{
   font-family:var(--display);
-  font-size:clamp(36px,4.5vw,64px);
+  font-size:clamp(28px,3.5vw,52px);
   font-weight:700;
   line-height:1.05;
   letter-spacing:-.03em;
-  margin-bottom:44px;
+  margin-bottom:20px;
 }
 h2.section-title em{font-style:normal;color:var(--R)}
 
 .lead{
-  font-size:clamp(17px,1.7vw,22px);
+  font-size:clamp(14px,1.3vw,17px);
   color:var(--T2);
   max-width:700px;
-  line-height:1.8;
+  line-height:1.6;
+  margin-bottom:16px;
 }
 
 /* ── STAT GRID ── */
 .stat-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
   gap:1px;
-  margin:48px 0;
+  margin:16px 0;
   border:1px solid var(--line);
 }
 .stat-card{
   background:var(--bg1);
-  padding:28px 24px;
+  padding:16px 18px;
   border-right:1px solid var(--line);
 }
 .stat-card:last-child{border-right:none}
 .stat-num{
   font-family:var(--mono);
-  font-size:clamp(32px,3.5vw,52px);
+  font-size:clamp(26px,2.8vw,40px);
   font-weight:600;
   color:var(--R2);
   line-height:1;
-  margin-bottom:10px;
+  margin-bottom:6px;
 }
 .stat-label{font-size:16px;color:var(--T2);line-height:1.55}
 .stat-source{
@@ -329,13 +331,13 @@ h2.section-title em{font-style:normal;color:var(--R)}
 }
 .cwe-table th{
   font-family:var(--mono);
-  font-size:11px;letter-spacing:.15em;text-transform:uppercase;
-  color:var(--T3);padding:11px 14px;text-align:left;
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--T3);padding:7px 10px;text-align:left;
   border-bottom:1px solid var(--line);
 }
 .cwe-table td{
-  padding:13px 14px;
-  font-size:15px;
+  padding:8px 10px;
+  font-size:13px;
   border-bottom:1px solid var(--T4);
   vertical-align:middle;
 }
@@ -345,13 +347,13 @@ h2.section-title em{font-style:normal;color:var(--R)}
 /* ── PAPER CARDS ── */
 .paper-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:1px;margin:40px 0;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;margin:14px 0;
 }
 .paper-card{
   background:var(--bg1);
   border:1px solid var(--line);
-  padding:22px;position:relative;overflow:hidden;
+  padding:14px;position:relative;overflow:hidden;
 }
 .paper-card::before{
   content:'';position:absolute;
@@ -360,16 +362,11 @@ h2.section-title em{font-style:normal;color:var(--R)}
 }
 .paper-year{
   font-family:var(--mono);font-size:9px;color:var(--T3);
-  margin-bottom:8px;letter-spacing:.1em;
+  margin-bottom:5px;letter-spacing:.1em;
 }
-.paper-title{font-size:15px;font-weight:600;color:var(--T);margin-bottom:8px;line-height:1.4}
-.paper-finding{font-size:13px;color:var(--T2);line-height:1.7}
-.paper-quote{
-  font-size:12.5px;color:var(--T2);line-height:1.65;
-  font-style:italic;margin-top:10px;padding-top:10px;
-  border-top:1px solid var(--line);
-}
-.paper-quote strong{color:var(--T);font-style:normal}
+.paper-title{font-size:13px;font-weight:600;color:var(--T);margin-bottom:5px;line-height:1.3}
+.paper-finding{font-size:12px;color:var(--T2);line-height:1.5}
+.paper-quote{display:none}
 .paper-finding strong{color:var(--R2)}
 
 /* ── FLOW ── */
@@ -470,7 +467,7 @@ h2.section-title em{font-style:normal;color:var(--R)}
 .vibe-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:1px;margin:36px 0;
+  gap:1px;margin:16px 0;
 }
 .vibe-card{
   background:var(--bg1);
@@ -488,17 +485,17 @@ h2.section-title em{font-style:normal;color:var(--R)}
 .vibe-prompt-bubble{
   background:rgba(58,123,213,.12);
   border:1px solid rgba(58,123,213,.2);
-  padding:8px 12px;
+  padding:6px 10px;
   border-radius:0 8px 8px 8px;
-  font-size:14px;color:var(--T2);
+  font-size:13px;color:var(--T2);
   font-family:var(--f);
-  line-height:1.5;flex:1;
+  line-height:1.4;flex:1;
 }
 .vibe-result{
-  padding:14px 16px;
+  padding:10px 14px;
   font-family:var(--mono);
-  font-size:13px;
-  line-height:1.7;
+  font-size:12px;
+  line-height:1.6;
 }
 .vibe-result .danger{
   color:var(--R2);display:block;
@@ -511,8 +508,8 @@ h2.section-title em{font-style:normal;color:var(--R)}
   color:var(--T3);font-size:10px;display:block;margin-top:8px;
 }
 .vibe-consequence{
-  padding:10px 16px 14px;
-  font-size:13px;color:var(--T2);
+  padding:7px 14px 10px;
+  font-size:12px;color:var(--T2);
   border-top:1px solid var(--line);
   background:var(--Rfog);
   font-style:italic;
@@ -522,10 +519,10 @@ h2.section-title em{font-style:normal;color:var(--R)}
 .method-steps{
   display:grid;
   grid-template-columns:repeat(5,1fr);
-  gap:1px;margin:44px 0;
+  gap:1px;margin:16px 0;
 }
 .method-step{
-  padding:24px 16px;background:var(--bg1);
+  padding:16px 12px;background:var(--bg1);
   border-top:2px solid var(--line);
 }
 .method-step.active{border-top-color:var(--R)}
@@ -538,12 +535,12 @@ h2.section-title em{font-style:normal;color:var(--R)}
 ════════════════════════════════════ */
 .lucky7-header{
   text-align:center;
-  margin-bottom:56px;
+  margin-bottom:20px;
   position:relative;
 }
 .lucky7-num{
   font-family:var(--display);
-  font-size:clamp(80px,14vw,160px);
+  font-size:clamp(56px,9vw,110px);
   font-weight:800;
   line-height:1;
   letter-spacing:-.05em;
@@ -641,18 +638,18 @@ h2.section-title em{font-style:normal;color:var(--R)}
 .dataset-callout{
   display:flex;
   gap:1px;
-  margin-top:28px;
+  margin-top:14px;
 }
 .ds-stat{
   flex:1;background:var(--bg2);
   border:1px solid var(--Rrim);
-  padding:16px 18px;
+  padding:10px 14px;
 }
 .ds-stat-num{
   font-family:var(--display);
-  font-size:clamp(22px,2.5vw,32px);
+  font-size:clamp(18px,2vw,26px);
   font-weight:700;color:var(--R2);
-  line-height:1;margin-bottom:4px;
+  line-height:1;margin-bottom:3px;
 }
 .ds-stat-label{font-size:13px;color:var(--T2);line-height:1.4}
 .ds-source{
@@ -832,29 +829,6 @@ code.inline{
       그리고 <em>위험하다.</em>
     </h2>
 
-    <div class="stat-grid">
-      <div class="stat-card">
-        <div class="stat-num">55.8%</div>
-        <div class="stat-label">LLM 생성 코드 중<br>최소 1개 이상 취약점 포함</div>
-        <div class="stat-source">Blain & Noiseux, arXiv:2604.05292 (2026)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num">+22%</div>
-        <div class="stat-label">바이브코딩 결과물이<br>수동 작성 코드 대비 더 많은 취약점</div>
-        <div class="stat-source">Samsyudin (2025)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num">16–18%</div>
-        <div class="stat-label">AI 생성 Python 코드의<br>취약점 비율 (언어 중 최고)</div>
-        <div class="stat-source">Schreiber & Tippe (2025) — 7,703 파일</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-num">77종</div>
-        <div class="stat-label">AI 생성 Python에서<br>발견된 서로 다른 CWE 타입</div>
-        <div class="stat-source">Schreiber & Tippe (2025)</div>
-      </div>
-    </div>
-
     <div class="vibe-grid">
       <div class="vibe-card">
         <div class="vibe-prompt">
@@ -899,13 +873,6 @@ code.inline{
       </div>
     </div>
 
-    <div class="quote-block">
-      <div class="quote-text">
-        "LLMs warned about vulnerabilities in only <strong>12.6%–40%</strong> of cases where they introduced one.
-        Models are largely <strong>unaware of the insecurities they produce</strong>."
-      </div>
-      <div class="quote-source">Mohit et al., arXiv:2502.14202 (2025) — Do LLMs Know When Their Code Is Insecure?</div>
-    </div>
   </div>
   <div class="slide-num">01 / 05</div>
 </section>
@@ -1309,6 +1276,22 @@ const obs = new IntersectionObserver(entries => {
   });
 }, { threshold: 0.5 });
 slides.forEach(s => obs.observe(s));
+
+function fitSlides() {
+  document.querySelectorAll('.slide').forEach(slide => {
+    const inner = slide.querySelector('.slide-inner');
+    if (!inner) return;
+    inner.style.transform = '';
+    const slideH = slide.clientHeight;
+    const innerH = inner.scrollHeight;
+    if (innerH > slideH - 8) {
+      const scale = (slideH - 8) / innerH;
+      inner.style.transform = `scale(${scale})`;
+    }
+  });
+}
+window.addEventListener('load', fitSlides);
+window.addEventListener('resize', fitSlides);
 </script>
 </body>
 </html>
