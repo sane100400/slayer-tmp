@@ -62,7 +62,7 @@ class PatchExplanation(BaseModel):
     line: int
     title: str
     summary: str
-    guidance: str
+    reference: str
 
 
 class PatchResult(BaseModel):
@@ -74,13 +74,3 @@ class PatchResult(BaseModel):
     ai_used: str = "none"
     scanned_files: list[str] = Field(default_factory=list)
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
-
-
-class PatchExplanation(BaseModel):
-    file: str
-    rule_id: str
-    rule_name: str
-    line: int
-    title: str
-    summary: str
-    reference: str

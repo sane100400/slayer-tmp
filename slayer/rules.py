@@ -46,8 +46,8 @@ DEFAULT_RULES: tuple[SLARule, ...] = (
     SLARule(
         id="NO_INSECURE_HASH",
         name="NO_INSECURE_HASH",
-        description="비밀번호나 토큰을 MD5/SHA1로 해싱하면 유출 시 매우 빠르게 원문을 추측할 수 있습니다.",
-        raw_nl="취약한 MD5/SHA1 해시 금지",
+        description="비밀번호나 토큰을 MD5/SHA1로 해싱하면 유출 시 매우 빠르게 원문이 추측될 수 있습니다.",
+        raw_nl="MD5/SHA1 기반 비밀번호·토큰 해싱 금지",
         rule_type="NO_INSECURE_HASH",
         severity="high",
     ),
@@ -67,7 +67,7 @@ RULE_GUIDANCE: dict[str, str] = {
     "NO_EXEC": '쉘 문자열 실행을 제거하고 안전한 인수 리스트 또는 차단 동작으로 바꾸세요.',
     "SQL_PARAM_BINDING": '문자열 보간 SQL을 파라미터 바인딩으로 바꾸세요.',
     "NO_DEBUG_MODE": '하드코딩된 debug/DEBUG true를 환경 변수 기반 설정으로 바꾸세요.',
-    "NO_INSECURE_HASH": 'MD5/SHA1 해시를 PBKDF2-HMAC-SHA256 또는 런타임 crypto SHA-256 대안으로 바꾸세요.',
+    "NO_INSECURE_HASH": '비밀번호/토큰 해싱에 MD5/SHA1을 쓰지 말고 pbkdf2_hmac 또는 SHA-256 이상으로 바꾸세요.',
     "NO_BARE_EXCEPT": '빈 except/catch를 구체적인 예외 처리와 로깅으로 바꾸세요.',
 }
 
