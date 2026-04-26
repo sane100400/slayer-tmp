@@ -22,14 +22,26 @@ src-tauri/.cargo/
 *.egg-info/
 backend/dist/
 
-# Dataset (vibe coding samples — local only, do not commit)
-dataset/*
-!dataset/analysis.*
+# Dataset artifacts
+# Keep committed benchmark fixtures and summary analysis files, but ignore
+# locally collected repositories, extracted source snapshots, and generated
+# vulnerability-analysis intermediates from the spec-building process.
+dataset/dataset/
+dataset/drepos/
+dataset/repos/
+dataset/web/
+dataset/**/*.log
+dataset/**/*.jsonl
+dataset/vuln_stats*.csv
+dataset/vuln_stats*.json
+dataset/analysis_repos.csv
+dataset/analysis_repos.json
 
 # RAG index (generated from dataset)
 tools/.chroma_index/
 tools/pattern_report.json
 tools/*_pattern_report.json
+tools/collect_vibecoding_datasets.py
 
 # Editor directories and files
 .vscode/*
