@@ -11,10 +11,10 @@ ANALYZE_SYSTEM = """Python 코드를 주어진 보안 룰에 따라 검사하세
 """
 
 
-async def analyze(code: str, rule: SLARule, filepath: str, client: anthropic.Anthropic) -> list[Violation]:
+async def analyze(code: str, rule: SLARule, filepath: str, client: anthropic.AsyncAnthropic) -> list[Violation]:
     try:
         prompt = f"룰: {rule.description}\n\n코드:\n{code}"
-        response = client.messages.create(
+        response = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=2048,
             system=ANALYZE_SYSTEM,

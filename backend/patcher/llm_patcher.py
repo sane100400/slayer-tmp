@@ -1,6 +1,7 @@
 import difflib
 import anthropic
 from models import SLARule, Violation, PatchResult
+from fastapi import HTTPException
 
 PATCH_SYSTEM = """Python 코드의 보안 위반을 최소한으로 수정하세요.
 기존 로직은 유지하고, 위반 구문만 안전한 대안으로 교체합니다.
@@ -30,15 +31,18 @@ async def patch(
     code: str,
     violations: list[Violation],
     rules: list[SLARule],
-    client: anthropic.Anthropic,
+    client: anthropic.AsyncAnthropic,
 ) -> PatchResult:
     summary = "\n".join(f"- 라인 {v.line}: {v.explanation}" for v in violations)
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=8192,
-        system=PATCH_SYSTEM,
-        messages=[{"role": "user", "content": f"위반 목록:\n{summary}\n\n원본 코드:\n{code}"}],
-    )
+    try:
+        response = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=8192,
+            system=PATCH_SYSTEM,
+            messages=[{"role": "user", "content": f"위반 목록:\n{summary}\n\n원본 코드:\n{code}"}],
+        )
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Claude API 오류: {e}")
     patched = response.content[0].text.strip()
     return PatchResult(
         original_code=code,

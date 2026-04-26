@@ -8,11 +8,11 @@ from patcher import llm_patcher
 router = APIRouter()
 
 
-def get_client(api_key: str) -> anthropic.Anthropic:
+def get_client(api_key: str) -> anthropic.AsyncAnthropic:
     key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
     if not key:
         raise HTTPException(status_code=401, detail="ANTHROPIC_API_KEY 없음. 앱 설정에서 입력해주세요.")
-    return anthropic.Anthropic(api_key=key)
+    return anthropic.AsyncAnthropic(api_key=key)
 
 
 @router.post("/patch")
@@ -24,7 +24,10 @@ async def patch_files(
     results = []
 
     for filepath in body.files:
-        code = Path(filepath).read_text(encoding="utf-8")
+        try:
+            code = Path(filepath).read_text(encoding="utf-8")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"파일을 읽을 수 없어요: {filepath} — {e}")
         file_violations = [v for v in body.violations if v.file == filepath]
         if not file_violations:
             continue
@@ -39,10 +42,11 @@ async def patch_files(
     from routers.scan import scan as do_scan
     rescan = await do_scan(ScanRequest(files=body.files, rules=body.rules), x_api_key=x_api_key)
 
+    combined_diff = "\n".join(r.diff for r in results if r.diff)
     return PatchResult(
         original_code=results[0].original_code,
         patched_code=results[0].patched_code,
-        diff=results[0].diff,
+        diff=combined_diff,
         remaining_violations=rescan.violations,
         deployable=rescan.deployable,
     )

@@ -8,7 +8,7 @@ import { CodeViewer } from "./components/CodeViewer";
 import { DiffViewer } from "./components/DiffViewer";
 import { DeployGate } from "./components/DeployGate";
 import { SettingsModal } from "./components/SettingsModal";
-import type { AppState, SLARule, Violation } from "./types";
+import type { AppState, SLARule, ScanResult, Violation } from "./types";
 
 // 규칙은 사용자가 볼 필요 없음 — 자동으로 적용
 const PRESET_RULES: SLARule[] = [
@@ -66,12 +66,22 @@ export default function App() {
         state.scanResult!.violations.filter(v => v.rule_id !== "__file_error__").map(v => v.file)
       )];
       const result = await patchFiles(violatedFiles, state.scanResult!.violations, PRESET_RULES);
-      setState(s => ({ ...s, patchResult: result, step: "patched" }));
+
+      // 백엔드가 이미 재스캔했으므로 remaining_violations로 scanResult 업데이트
+      const failIds = new Set(
+        result.remaining_violations.filter(v => v.rule_id !== "__file_error__").map(v => v.rule_id)
+      );
+      const passCount = PRESET_RULES.filter(r => !failIds.has(r.id)).length;
+      const updatedScan: ScanResult = {
+        rules: state.scanResult!.rules,
+        violations: result.remaining_violations,
+        pass_count: passCount,
+        fail_count: PRESET_RULES.length - passCount,
+        deployable: result.deployable,
+      };
+
+      setState(s => ({ ...s, patchResult: result, scanResult: updatedScan, step: "patched" }));
       setRightTab("diff");
-      // 자동 재스캔
-      const rescan = await scanFiles(state.selectedFiles, PRESET_RULES);
-      setState(s => ({ ...s, scanResult: rescan, step: "scanned" }));
-      setRightTab("vulns");
     } catch (e: any) {
       if (e.message === "API_KEY_MISSING") setShowSettings(true);
       setState(s => ({ ...s, step: "scanned" }));

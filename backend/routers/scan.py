@@ -8,9 +8,9 @@ from analyzers import ast_analyzer, llm_analyzer
 router = APIRouter()
 
 
-def get_client(api_key: str) -> anthropic.Anthropic | None:
+def get_client(api_key: str) -> anthropic.AsyncAnthropic | None:
     key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-    return anthropic.Anthropic(api_key=key) if key else None
+    return anthropic.AsyncAnthropic(api_key=key) if key else None
 
 
 @router.post("/scan")
@@ -40,6 +40,7 @@ async def scan(
                 vs2 = await llm_analyzer.analyze(code, rule, filepath, client)
                 all_violations.extend(vs2)
 
+    has_file_errors = any(v.rule_id == "__file_error__" for v in all_violations)
     fail_ids = {v.rule_id for v in all_violations if v.rule_id != "__file_error__"}
     pass_count = sum(1 for r in body.rules if r.id not in fail_ids)
     fail_count = len(body.rules) - pass_count
@@ -49,5 +50,5 @@ async def scan(
         violations=all_violations,
         pass_count=pass_count,
         fail_count=fail_count,
-        deployable=(fail_count == 0),
+        deployable=(fail_count == 0 and not has_file_errors),
     )

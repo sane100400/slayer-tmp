@@ -24,11 +24,11 @@ rule_type 매핑:
 - 그 외 → CUSTOM (medium)"""
 
 
-def get_client(api_key: str) -> anthropic.Anthropic:
+def get_client(api_key: str) -> anthropic.AsyncAnthropic:
     key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
     if not key:
         raise HTTPException(status_code=401, detail="ANTHROPIC_API_KEY 없음. 앱 설정에서 입력해주세요.")
-    return anthropic.Anthropic(api_key=key)
+    return anthropic.AsyncAnthropic(api_key=key)
 
 
 @router.post("/sla/parse")
@@ -37,13 +37,19 @@ async def parse_sla(
     x_api_key: str = Header(default="", alias="X-API-Key"),
 ):
     client = get_client(x_api_key)
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2048,
-        system=PARSE_SYSTEM,
-        messages=[{"role": "user", "content": body.nl_rules}],
-    )
+    try:
+        response = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2048,
+            system=PARSE_SYSTEM,
+            messages=[{"role": "user", "content": body.nl_rules}],
+        )
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Claude API 오류: {e}")
     raw = response.content[0].text.strip()
-    items = json.loads(raw)
-    rules = [SLARule(**item) for item in items]
+    try:
+        items = json.loads(raw)
+        rules = [SLARule(**item) for item in items]
+    except (json.JSONDecodeError, Exception) as e:
+        raise HTTPException(status_code=400, detail=f"룰 파싱 실패: {e}\n응답: {raw[:200]}")
     return {"rules": [r.model_dump() for r in rules]}
