@@ -66,10 +66,10 @@ Recommended item shape:
   "rule_id": "SQL_PARAM_BINDING",
   "rule_name": "SQL_PARAM_BINDING",
   "line": 13,
-  "title": "SQL을 파라미터 바인딩으로 바꿨어요",
-  "summary": "사용자 값을 SQL 문자열에 직접 붙이지 않고 DB 드라이버의 바인딩 인자로 전달하게 했어요.",
-  "guidance": "문자열 보간 SQL을 파라미터 바인딩으로 바꾸세요.",
-  "reference": "spec.md#SQL_PARAM_BINDING"
+  "summary": "문자열로 만든 SQL을 파라미터 바인딩으로 바꿨어요.",
+  "why": "사용자 입력이 SQL 명령으로 해석되지 않게 막습니다.",
+  "before": "cursor.execute(f\"SELECT * FROM users WHERE name='{query}'\")",
+  "after": "cursor.execute(\"SELECT * FROM users WHERE name=?\", (query,))"
 }
 ```
 
