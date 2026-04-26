@@ -57,7 +57,12 @@ def build_patch_prompt(path: Path, source: str, violations: list[Violation]) -> 
         f"- {violation.rule_name}: {RULE_GUIDANCE.get(violation.rule_name, '위반을 안전한 대안으로 바꾸세요.')}"
         for violation in unique_violations.values()
     )
-    violations_json = json.dumps([violation.model_dump() for violation in violations], ensure_ascii=False, indent=2)
+    def _redact_violation(v: Violation) -> dict:
+        d = v.model_dump()
+        d['code_snippet'] = redact_secrets(d['code_snippet'])
+        return d
+
+    violations_json = json.dumps([_redact_violation(v) for v in violations], ensure_ascii=False, indent=2)
     return f"""
 You are patching one {language} source file for SLAyer.
 Return only the full updated file contents for this file. Do not add markdown fences or explanations.
