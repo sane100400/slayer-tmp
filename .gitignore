@@ -22,20 +22,8 @@ src-tauri/.cargo/
 *.egg-info/
 backend/dist/
 
-# Dataset artifacts
-# Keep committed benchmark fixtures and summary analysis files, but ignore
-# locally collected repositories, extracted source snapshots, and generated
-# vulnerability-analysis intermediates from the spec-building process.
-dataset/dataset/
-dataset/drepos/
-dataset/repos/
-dataset/web/
-dataset/**/*.log
-dataset/**/*.jsonl
-dataset/vuln_stats*.csv
-dataset/vuln_stats*.json
-dataset/analysis_repos.csv
-dataset/analysis_repos.json
+# Dataset artifacts (local only; do not commit)
+dataset/
 
 # RAG index (generated from dataset)
 tools/.chroma_index/
