@@ -214,7 +214,7 @@ slayer/
 - [`demo_vuln.py`](./demo_vuln.py) — Python 취약 패턴 데모
 - [`demo_vuln.js`](./demo_vuln.js) — JS 취약 패턴 데모
 - [`dataset/slayer-bench-v0/`](./dataset/slayer-bench-v0/) — 취약/패치/false-positive 벤치마크 fixture
-- [`dataset/ai-bench-v0/`](./dataset/ai-bench-v0/) — AI 생성 코드 벤치마크 fixture
+- [`dataset/ai-bench-v0/`](./dataset/ai-bench-v0/), [`dataset/ai-bench-v1/`](./dataset/ai-bench-v1/) — AI 생성 코드 벤치마크 fixture
 - [`presentation.html`](./presentation.html), [`branding.html`](./branding.html) — 발표 자료
 
 ---
