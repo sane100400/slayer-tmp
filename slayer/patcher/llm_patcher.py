@@ -140,6 +140,7 @@ def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int 
         )
 
     candidate = detect_ai_cli(preferred=selected_ai)
+    scan_root = target_path.resolve()
     patched_files: list[str] = []
     diffs: dict[str, str] = {}
     patch_explanations: list[PatchExplanation] = []
@@ -149,6 +150,11 @@ def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int 
         changes_this_round = 0
         for file_name, violations in group_violations_by_file(scan_result.violations).items():
             path = Path(file_name)
+            # Guard: refuse to write outside scan root (symlink traversal defence)
+            try:
+                path.resolve().relative_to(scan_root if scan_root.is_dir() else scan_root.parent)
+            except ValueError:
+                continue
             original = path.read_text(encoding='utf-8', errors='replace')
             prompt = build_patch_prompt(path, redact_secrets(original), violations)
             raw_output, _ = run_ai(prompt, preferred=selected_ai, timeout=timeout, cwd=path.parent, candidate=candidate)

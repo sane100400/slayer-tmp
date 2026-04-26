@@ -46,8 +46,15 @@ def collect_supported_files(target: Path) -> list[Path]:
         root_path = Path(root)
         for filename in filenames:
             candidate = root_path / filename
+            if candidate.is_symlink():
+                continue
             if candidate.suffix.lower() in SUPPORTED_EXTENSIONS:
-                files.append(candidate.resolve())
+                real = candidate.resolve()
+                try:
+                    real.relative_to(resolved)
+                except ValueError:
+                    continue
+                files.append(real)
     return sorted(files)
 
 
