@@ -52,11 +52,53 @@ def test_patch_uses_explicit_ai_selection_and_rescans_clean(tmp_path, fake_ai_en
 def test_patch_cli_json_output(tmp_path, fake_ai_env, monkeypatch):
     target = tmp_path / 'demo.py'
     target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    config = tmp_path / '.slayer.yml'
+    config.write_text('ai: codex\n', encoding='utf-8')
     patched_code = 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n'
     monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', patched_code)
+    monkeypatch.chdir(tmp_path)
 
     result = runner.invoke(app, ['patch', str(target), '--format', 'json'])
     payload = json.loads(result.stdout)
 
     assert result.exit_code == 0
     assert payload['deployable'] is True
+    assert payload['ai_used'] == 'codex'
+
+
+def test_patch_cli_requires_slayer_yml(tmp_path, fake_ai_env, monkeypatch):
+    target = tmp_path / 'demo.py'
+    target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['patch', str(target)])
+
+    assert result.exit_code == 2
+    assert '.slayer.yml에 ai 설정이 필요합니다' in result.stderr
+
+
+def test_patch_cli_rejects_invalid_slayer_yml_ai(tmp_path, fake_ai_env, monkeypatch):
+    target = tmp_path / 'demo.py'
+    target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    (tmp_path / '.slayer.yml').write_text('ai: nope\n', encoding='utf-8')
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['patch', str(target)])
+
+    assert result.exit_code == 2
+    assert 'ai 값이 잘못되었습니다' in result.stderr
+
+
+def test_patch_cli_auto_uses_detection_when_configured(tmp_path, fake_ai_env, monkeypatch):
+    target = tmp_path / 'demo.py'
+    target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    (tmp_path / '.slayer.yml').write_text('ai: auto\n', encoding='utf-8')
+    patched_code = 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n'
+    monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', patched_code)
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['patch', str(target), '--format', 'json'])
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload['ai_used'] == 'claude'

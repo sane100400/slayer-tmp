@@ -61,7 +61,8 @@ def build_patch_prompt(path: Path, source: str, violations: list[Violation]) -> 
     return f"""
 You are patching one {language} source file for SLAyer.
 Return only the full updated file contents for this file. Do not add markdown fences or explanations.
-Keep changes minimal and preserve behavior unless a rule explicitly requires blocking unsafe behavior.
+Only fix the violations listed below. Do not change code that is unrelated to those violations.
+Keep variable names, comments, formatting, and behavior unchanged unless a listed violation requires a security fix.
 
 File: {path}
 Violations:
