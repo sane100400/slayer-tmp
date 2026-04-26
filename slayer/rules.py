@@ -130,8 +130,9 @@ def canonical_rule_id(rule_id: str) -> str:
 
 
 def patch_explanation_for(violation: Violation, file: str | None = None) -> PatchExplanation:
-    canonical = canonical_rule_id(violation.rule_name or violation.rule_id)
-    canonical = canonical_rule_id(violation.rule_id if canonical not in PATCH_EXPLANATION_TEMPLATES else canonical)
+    canonical = canonical_rule_id(violation.rule_id)
+    if canonical not in PATCH_EXPLANATION_TEMPLATES:
+        canonical = canonical_rule_id(violation.rule_name)
     title, summary, guidance = PATCH_EXPLANATION_TEMPLATES.get(
         canonical,
         (
@@ -148,4 +149,5 @@ def patch_explanation_for(violation: Violation, file: str | None = None) -> Patc
         title=title,
         summary=summary,
         guidance=guidance,
+        reference=f"spec.md#{canonical}",
     )

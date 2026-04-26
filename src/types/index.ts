@@ -1,11 +1,11 @@
 export type RuleType =
-  | "SQL_INJECTION"
-  | "HARDCODED_SECRETS"
-  | "DEBUG_MODE_ON"
-  | "INSECURE_COOKIE"
-  | "WEAK_HASH"
-  | "COMMAND_INJECTION"
-  | "OPEN_REDIRECT"
+  | "NO_NETWORK"
+  | "NO_EXEC"
+  | "NO_HARDCODED_SECRETS"
+  | "SQL_PARAM_BINDING"
+  | "NO_DEBUG_MODE"
+  | "NO_INSECURE_HASH"
+  | "NO_BARE_EXCEPT"
   | "CUSTOM";
 
 export type Severity = "critical" | "high" | "medium";
@@ -44,6 +44,18 @@ export interface PatchResult {
   remaining_violations: Violation[];
   deployable: boolean;
   ai_used: string;
+  patch_explanations?: PatchExplanation[];
+}
+
+export interface PatchExplanation {
+  file: string;
+  rule_id: string;
+  rule_name: string;
+  line: number;
+  title: string;
+  summary: string;
+  guidance: string;
+  reference: string;
 }
 
 export type AppStep =

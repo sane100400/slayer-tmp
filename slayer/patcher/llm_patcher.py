@@ -10,8 +10,8 @@ import tempfile
 from pathlib import Path
 
 from slayer.ai_runner import detect_ai_cli, extract_code, run_ai
-from slayer.models import AIChoice, PatchResult, Violation
-from slayer.rules import RULE_GUIDANCE
+from slayer.models import AIChoice, PatchExplanation, PatchResult, Violation
+from slayer.rules import RULE_GUIDANCE, patch_explanation_for
 from slayer.scanner import detect_language, group_violations_by_file, scan_path
 
 MAX_PATCH_ROUNDS = 2
@@ -137,6 +137,8 @@ def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int 
     candidate = detect_ai_cli(preferred=selected_ai)
     patched_files: list[str] = []
     diffs: dict[str, str] = {}
+    patch_explanations: list[PatchExplanation] = []
+    explained_keys: set[tuple[str, str, int]] = set()
 
     for _ in range(MAX_PATCH_ROUNDS):
         changes_this_round = 0
@@ -153,6 +155,11 @@ def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int 
                 if file_name not in patched_files:
                     patched_files.append(file_name)
                 diffs[file_name] = diff
+                for violation in violations:
+                    key = (file_name, violation.rule_id, violation.line)
+                    if key not in explained_keys:
+                        patch_explanations.append(patch_explanation_for(violation, file=file_name))
+                        explained_keys.add(key)
                 changes_this_round += 1
 
         scan_result = scan_path(target_path)
@@ -167,4 +174,5 @@ def patch_path(target: str | Path, selected_ai: AIChoice = 'auto', timeout: int 
         ai_used=candidate.name,
         scanned_files=scan_result.scanned_files,
         syntax_errors=scan_result.syntax_errors,
+        patch_explanations=patch_explanations,
     )

@@ -43,6 +43,11 @@ async def patch_files(
     rescan = await do_scan(ScanRequest(files=body.files, rules=body.rules), x_api_key=x_api_key)
 
     combined_diff = "\n".join(r.diff for r in results if r.diff)
+    combined_explanations = [
+        explanation
+        for result in results
+        for explanation in result.patch_explanations
+    ]
     return PatchResult(
         original_code=results[0].original_code,
         patched_code=results[0].patched_code,
@@ -50,4 +55,5 @@ async def patch_files(
         remaining_violations=rescan.violations,
         deployable=rescan.deployable,
         ai_used=results[0].ai_used,
+        patch_explanations=combined_explanations,
     )

@@ -17,11 +17,13 @@ PROVIDER_PATTERNS = (
 )
 PLACEHOLDER_WORDS = {"example", "dummy", "test", "changeme", "your_api_key", "xxxxx", "sample", "placeholder"}
 NETWORK_RE = re.compile(r'\b(fetch|axios\.(?:get|post|put|delete|patch)|http\.(?:get|request)|https\.(?:get|request))\s*\(')
-EXEC_RE = re.compile(
-    r'(?:(?:child_process|cp)\.)?(?:exec|execSync|spawnSync)\s*\('
+EXEC_DIRECT_RE = re.compile(
+    r'(?:child_process|cp)\.(?:exec|execSync|spawnSync)\s*\('
     r'|require\([\"\']child_process[\"\']\)\.(?:exec|execSync|spawnSync)\s*\('
-    r'|(?<![\w$.])(?:exec|execSync|spawnSync)\s*\('
 )
+EXEC_IMPORT_RE = re.compile(r'(?:const|let|var)\s*\{(?P<names>[^}]+)\}\s*=\s*require\([\"\']child_process[\"\']\)')
+EXEC_IMPORT_ESM_RE = re.compile(r'import\s*\{(?P<names>[^}]+)\}\s*from\s*[\"\']child_process[\"\']')
+EXEC_NAMES = {'exec', 'execSync', 'spawnSync'}
 SQL_TEMPLATE_RE = re.compile(r'`[^`]*(SELECT|INSERT|UPDATE|DELETE|DROP)[^`]*\$\{', re.IGNORECASE)
 SQL_CONCAT_RE = re.compile(r'(?i)(SELECT|INSERT|UPDATE|DELETE|DROP).*(?:\+|concat\()')
 DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bdebug\s*=\s*true\b')
@@ -76,7 +78,6 @@ def _line_number(source: str, index: int) -> int:
     return source.count('\n', 0, index) + 1
 
 
-
 def _has_security_context(line: str) -> bool:
     lowered = line.lower()
     return any(word in lowered for word in SECURITY_CONTEXT_WORDS)
@@ -87,9 +88,30 @@ def _has_sql_context(line: str) -> bool:
     return any(word in lowered for word in SQL_CONTEXT_WORDS)
 
 
+def _imported_child_process_exec_names(source: str) -> set[str]:
+    names: set[str] = set()
+    for pattern in (EXEC_IMPORT_RE, EXEC_IMPORT_ESM_RE):
+        for match in pattern.finditer(source):
+            for raw_name in match.group('names').split(','):
+                alias_separator = ' as ' if ' as ' in raw_name else ':'
+                parts = [part.strip() for part in raw_name.strip().split(alias_separator, 1)]
+                name = parts[0]
+                local_name = parts[-1]
+                if name in EXEC_NAMES:
+                    names.add(local_name)
+    return names
+
+
+def _has_exec_violation(line: str, imported_exec_names: set[str]) -> bool:
+    if EXEC_DIRECT_RE.search(line):
+        return True
+    return any(re.search(rf'(?<![\w$.]){re.escape(name)}\s*\(', line) for name in imported_exec_names)
+
+
 def analyze(path: Path, source: str) -> list[Violation]:
     lines = source.splitlines()
     violations: list[Violation] = []
+    imported_exec_names = _imported_child_process_exec_names(source)
 
     for lineno, line in enumerate(lines, 1):
         match = SECRET_ASSIGN_RE.search(line)
@@ -109,7 +131,7 @@ def analyze(path: Path, source: str) -> list[Violation]:
             if not _is_safe_literal(first_arg) or any(token in lowered for token in ('req.', 'request.', 'params.', 'query.', 'body.', '${')):
                 violations.append(_violation('NO_NETWORK', path, lineno, lines))
 
-        if EXEC_RE.search(line):
+        if _has_exec_violation(line, imported_exec_names):
             violations.append(_violation('NO_EXEC', path, lineno, lines))
 
         if (SQL_TEMPLATE_RE.search(line) or SQL_CONCAT_RE.search(line)) and _has_sql_context(line):

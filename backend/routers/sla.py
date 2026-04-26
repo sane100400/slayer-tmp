@@ -18,13 +18,13 @@ PARSE_SYSTEM = """보안을 전혀 모르는 개발자도 이해할 수 있게 �
 {"id":"rule_N","name":"짧은 이름","description":"보안 용어 없이 '누가 ~을 할 수 있어요' 또는 '~이 노출돼요' 형식 한국어 한 문장","raw_nl":"원본 입력","rule_type":"(아래 매핑 참고)","severity":"critical|high|medium"}
 
 rule_type 매핑:
-- SQL / 쿼리 / 인젝션 → SQL_INJECTION (critical)
-- 비밀번호·API 키·시크릿·토큰 하드코딩 → HARDCODED_SECRETS (critical)
-- 디버그·debug=True → DEBUG_MODE_ON (high)
-- 쿠키·cookie·세션 보안 → INSECURE_COOKIE (high)
-- MD5·SHA1·약한 해싱 → WEAK_HASH (high)
-- 명령어·subprocess·exec → COMMAND_INJECTION (critical)
-- 리다이렉트·redirect·open redirect → OPEN_REDIRECT (medium)
+- 검증 없는 네트워크 호출 / SSRF / requests / fetch → NO_NETWORK (critical)
+- 명령어·subprocess shell=True·os.system·exec → NO_EXEC (critical)
+- 비밀번호·API 키·시크릿·토큰 하드코딩 → NO_HARDCODED_SECRETS (critical)
+- SQL / 쿼리 / 인젝션 / 문자열 보간 SQL → SQL_PARAM_BINDING (high)
+- 디버그·debug=True → NO_DEBUG_MODE (high)
+- MD5·SHA1·약한 비밀번호/토큰 해싱 → NO_INSECURE_HASH (high)
+- 빈 except / 빈 catch / 예외 삼키기 → NO_BARE_EXCEPT (medium)
 - 그 외 → CUSTOM (medium)"""
 
 

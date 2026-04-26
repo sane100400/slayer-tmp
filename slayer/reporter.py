@@ -32,6 +32,10 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
         lines.append(f'Patching via {result.ai_used}...')
     for patched in result.patched_files:
         lines.append(f'Patched: {patched}')
+        for explanation in result.patch_explanations:
+            if explanation.file == patched:
+                lines.append(f'  - {explanation.rule_name}: {explanation.title}')
+                lines.append(f'    {explanation.summary}')
     for issue in result.syntax_errors:
         location = f'{issue.file}:{issue.line}' if issue.line else issue.file
         lines.append(f'⚠ syntax error  {location}  {issue.message}')

@@ -158,8 +158,9 @@ def run_ai(
 
         if result.returncode != 0:
             stderr = (result.stderr or "").strip()
+            stderr_detail = f"\n{stderr}" if stderr else ""
             raise AICliExecutionError(
-                f"{selected.name} 실행이 실패했습니다 (exit={result.returncode}).{('\n' + stderr) if stderr else ''}"
+                f"{selected.name} 실행이 실패했습니다 (exit={result.returncode}).{stderr_detail}"
             )
 
         output = result.stdout

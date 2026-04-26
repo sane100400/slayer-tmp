@@ -1,7 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal, List
 
 RuleType = Literal[
+    "NO_NETWORK",
+    "NO_EXEC",
+    "NO_HARDCODED_SECRETS",
+    "SQL_PARAM_BINDING",
+    "NO_DEBUG_MODE",
+    "NO_INSECURE_HASH",
+    "NO_BARE_EXCEPT",
     "SQL_INJECTION",        # f-string / % 포맷 SQL
     "HARDCODED_SECRETS",    # 비밀번호·키 하드코딩
     "DEBUG_MODE_ON",        # debug=True / DEBUG=True
@@ -53,6 +60,17 @@ class PatchRequest(BaseModel):
     ai_cli: AIChoice = "auto"
 
 
+class PatchExplanation(BaseModel):
+    file: str
+    rule_id: str
+    rule_name: str
+    line: int
+    title: str
+    summary: str
+    guidance: str
+    reference: str = "spec.md"
+
+
 class PatchResult(BaseModel):
     original_code: str
     patched_code: str
@@ -60,6 +78,7 @@ class PatchResult(BaseModel):
     remaining_violations: List[Violation]
     deployable: bool
     ai_used: str = "none"
+    patch_explanations: List[PatchExplanation] = Field(default_factory=list)
 
 
 class ParseRequest(BaseModel):

@@ -12,20 +12,20 @@ import type { AppState, SLARule, ScanResult, Violation } from "./types";
 
 // 규칙은 사용자가 볼 필요 없음 — 자동으로 적용
 const PRESET_RULES: SLARule[] = [
-  { id: "r1", name: "데이터베이스 해킹 위험", raw_nl: "sql injection", rule_type: "SQL_INJECTION", severity: "critical",
-    description: "누군가 입력창에 특수문자를 넣어 DB의 모든 회원정보를 훔쳐갈 수 있어요." },
-  { id: "r2", name: "비밀번호·키 코드 노출", raw_nl: "hardcoded secrets", rule_type: "HARDCODED_SECRETS", severity: "critical",
+  { id: "NO_HARDCODED_SECRETS", name: "비밀번호·키 코드 노출", raw_nl: "hardcoded secrets", rule_type: "NO_HARDCODED_SECRETS", severity: "critical",
     description: "코드에 적힌 비밀번호·API 키가 GitHub에 올리는 순간 모두 공개돼요." },
-  { id: "r3", name: "서버 명령어 탈취 위험", raw_nl: "command injection", rule_type: "COMMAND_INJECTION", severity: "critical",
+  { id: "NO_NETWORK", name: "검증 없는 외부 호출", raw_nl: "untrusted network calls", rule_type: "NO_NETWORK", severity: "critical",
+    description: "사용자 입력 주소로 외부 요청을 보내면 내부망 조회나 민감정보 전송이 일어날 수 있어요." },
+  { id: "NO_EXEC", name: "서버 명령어 탈취 위험", raw_nl: "command injection", rule_type: "NO_EXEC", severity: "critical",
     description: "사용자 입력이 서버 명령어로 실행되어 서버 전체를 원격 조종당할 수 있어요." },
-  { id: "r4", name: "디버그 모드 배포", raw_nl: "debug mode on", rule_type: "DEBUG_MODE_ON", severity: "high",
+  { id: "SQL_PARAM_BINDING", name: "데이터베이스 해킹 위험", raw_nl: "sql parameter binding", rule_type: "SQL_PARAM_BINDING", severity: "high",
+    description: "누군가 입력창에 특수문자를 넣어 DB의 모든 회원정보를 훔쳐갈 수 있어요." },
+  { id: "NO_DEBUG_MODE", name: "디버그 모드 배포", raw_nl: "debug mode on", rule_type: "NO_DEBUG_MODE", severity: "high",
     description: "에러 시 서버 내부 코드·경로·환경변수가 사용자 화면에 그대로 노출돼요." },
-  { id: "r5", name: "로그인 쿠키 탈취 위험", raw_nl: "insecure cookie", rule_type: "INSECURE_COOKIE", severity: "high",
-    description: "보안 옵션 없는 쿠키는 악성 광고 배너 하나로 해커가 훔쳐갈 수 있어요." },
-  { id: "r6", name: "비밀번호 1초 해독 위험", raw_nl: "weak hash md5 sha1", rule_type: "WEAK_HASH", severity: "high",
+  { id: "NO_INSECURE_HASH", name: "비밀번호 1초 해독 위험", raw_nl: "weak hash md5 sha1", rule_type: "NO_INSECURE_HASH", severity: "high",
     description: "MD5·SHA1 해시는 요즘 컴퓨터로 1초도 안 걸려 해독돼요. DB 유출 시 전원 노출됩니다." },
-  { id: "r7", name: "피싱 사이트 유도 가능", raw_nl: "open redirect", rule_type: "OPEN_REDIRECT", severity: "medium",
-    description: "공격자가 로그인 후 이동 URL을 조작해 피싱 사이트로 사용자를 속일 수 있어요." },
+  { id: "NO_BARE_EXCEPT", name: "오류 은폐 위험", raw_nl: "bare except empty catch", rule_type: "NO_BARE_EXCEPT", severity: "medium",
+    description: "예외를 비워 두면 공격 징후와 장애 원인이 숨겨져 위험한 동작이 계속될 수 있어요." },
 ];
 
 type RightTab = "vulns" | "code" | "diff";
@@ -233,7 +233,10 @@ export default function App() {
             )}
             {rightTab === "diff" && (
               <div className="h-full">
-                <DiffViewer diff={state.patchResult?.diff ?? ""} />
+                <DiffViewer
+                  diff={state.patchResult?.diff ?? ""}
+                  explanations={state.patchResult?.patch_explanations ?? []}
+                />
               </div>
             )}
           </div>

@@ -45,6 +45,12 @@ def test_patch_uses_explicit_ai_selection_and_rescans_clean(tmp_path, fake_ai_en
     assert result.ai_used == 'codex'
     assert result.deployable is True
     assert result.remaining_violations == []
+    assert {item.rule_id for item in result.patch_explanations} == {
+        'NO_HARDCODED_SECRETS',
+        'SQL_PARAM_BINDING',
+        'NO_EXEC',
+    }
+    assert all(item.summary for item in result.patch_explanations)
     assert 'os.environ.get' in target.read_text(encoding='utf-8')
     assert str(target.resolve()) in result.diffs
 
@@ -78,6 +84,21 @@ def test_patch_cli_json_output(tmp_path, fake_ai_env, monkeypatch):
     assert result.exit_code == 0
     assert payload['deployable'] is True
     assert payload['ai_used'] == 'codex'
+    assert payload['patch_explanations'][0]['rule_id'] == 'NO_HARDCODED_SECRETS'
+
+
+def test_patch_text_output_includes_friendly_explanation(tmp_path, fake_ai_env, monkeypatch):
+    target = tmp_path / 'demo.py'
+    target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    (tmp_path / '.slayer.yml').write_text('ai: codex\n', encoding='utf-8')
+    monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n')
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(app, ['patch', str(target)])
+
+    assert result.exit_code == 0
+    assert 'NO_HARDCODED_SECRETS' in result.stdout
+    assert '비밀값을 코드 밖으로 옮겼어요' in result.stdout
 
 
 def test_patch_cli_requires_slayer_yml(tmp_path, fake_ai_env, monkeypatch):

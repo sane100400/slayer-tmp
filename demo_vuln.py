@@ -2,7 +2,7 @@
 demo_vuln.py — SLAyer 데모 파일
 spec.md 기준 7대 웹서비스 취약 패턴을 담은 샘플.
 """
-import random
+import hashlib
 import requests
 import sqlite3
 import subprocess
@@ -27,9 +27,8 @@ def analyze(filename: str):
     return subprocess.run(f"analyze {filename}", shell=True, capture_output=True)
 
 
-def generate_reset_token() -> str:
-    alphabet = "abcdef0123456789"
-    return "".join(random.choice(alphabet) for _ in range(32))
+def hash_password(password: str) -> str:
+    return hashlib.md5(password.encode()).hexdigest()
 
 
 def process_data(data):

@@ -14,7 +14,7 @@ def test_scan_detects_python_and_js_rules(tmp_path):
     python_file = tmp_path / 'demo.py'
     python_file.write_text(
         (
-            'import random\n'
+            'import hashlib\n'
             'import requests\n'
             'import sqlite3\n'
             'import subprocess\n'
@@ -29,8 +29,8 @@ def test_scan_detects_python_and_js_rules(tmp_path):
             'def analyze(filename):\n'
             '    return subprocess.run(f"analyze {filename}", shell=True, capture_output=True)\n\n'
             'def generate_reset_token():\n'
-            '    alphabet = "abcdef0123456789"\n'
-            '    return "".join(random.choice(alphabet) for _ in range(16))\n\n'
+            '    password = "user-password"\n'
+            '    return hashlib.md5(password.encode()).hexdigest()\n\n'
             'def process():\n'
             '    try:\n'
             '        return 1\n'
@@ -55,8 +55,8 @@ def test_scan_detects_python_and_js_rules(tmp_path):
             '  return require("child_process").exec(`analyze ${filename}`);\n'
             '}\n'
             'function makeResetToken() {\n'
-            '  const sessionToken = Math.random().toString(16);\n'
-            '  return sessionToken;\n'
+            '  const password = "user-password";\n'
+            '  return crypto.createHash("md5").update(password).digest("hex");\n'
             '}\n'
             'try {\n'
             '  work();\n'
@@ -73,8 +73,45 @@ def test_scan_detects_python_and_js_rules(tmp_path):
     assert 'NO_EXEC' in rule_names
     assert 'SQL_PARAM_BINDING' in rule_names
     assert 'NO_DEBUG_MODE' in rule_names
-    assert 'NO_WEAK_RANDOM' in rule_names
+    assert 'NO_INSECURE_HASH' in rule_names
     assert 'NO_BARE_EXCEPT' in rule_names
+
+
+def test_scan_avoids_spec_false_positive_examples(tmp_path):
+    safe_file = tmp_path / 'safe.py'
+    safe_js_file = tmp_path / 'safe.js'
+    safe_file.write_text(
+        (
+            'import hashlib\n'
+            'import subprocess\n'
+            'import requests\n'
+            'API_KEY = "your_api_key_example"\n'
+            'DEBUG = False\n\n'
+            'def ping():\n'
+            '    requests.get("https://api.example.com/health")\n'
+            '    subprocess.run(["echo", "ok"], shell=False)\n'
+            '    return hashlib.md5(b"asset-cache").hexdigest()\n\n'
+            'try:\n'
+            '    ping()\n'
+            'except Exception as exc:\n'
+            '    print(exc)\n'
+        ),
+        encoding='utf-8',
+    )
+    safe_js_file.write_text(
+        (
+            'async function healthcheck() { return fetch("https://api.example.com/health"); }\n'
+            'function checksum(fileBytes) { return crypto.createHash("md5").update(fileBytes).digest("hex"); }\n'
+            'function regexTest(pattern, value) { return pattern.exec(value); }\n'
+            'try { work(); } catch (error) { console.error(error); }\n'
+        ),
+        encoding='utf-8',
+    )
+
+    result = scan_path(tmp_path)
+
+    assert result.deployable is True
+    assert result.violations == []
 
 
 def test_start_json_output_and_exit_code(tmp_path):

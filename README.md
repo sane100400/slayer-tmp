@@ -128,8 +128,10 @@ slayer patch . --format json     # JSON 결과 출력
     {
       "file": "demo_vuln.py",
       "rule_id": "NO_EXEC",
-      "summary": "쉘 문자열 실행을 인수 리스트 실행으로 바꿨어요.",
-      "why": "사용자 입력이 명령어로 해석되지 않게 막습니다."
+      "title": "쉘 명령 주입 경로를 제거했어요",
+      "summary": "문자열 쉘 실행을 인수 리스트 기반 실행이나 차단 동작으로 바꿨어요.",
+      "guidance": "쉘 문자열 실행을 제거하고 안전한 인수 리스트 또는 차단 동작으로 바꾸세요.",
+      "reference": "spec.md#NO_EXEC"
     }
   ]
 }
