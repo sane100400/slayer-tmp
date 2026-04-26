@@ -86,7 +86,7 @@ def test_patch_cli_json_output(tmp_path, fake_ai_env, monkeypatch):
     assert payload['deployable'] is True
     assert payload['ai_used'] == 'codex'
     assert payload['patch_explanations'][0]['rule_name'] == 'NO_HARDCODED_SECRETS'
-    assert '비밀값' in payload['patch_explanations'][0]['title']
+    assert 'Moved secrets' in payload['patch_explanations'][0]['title']
 
 
 def test_patch_cli_text_output_includes_friendly_explanations(tmp_path, fake_ai_env, monkeypatch):
@@ -101,7 +101,7 @@ def test_patch_cli_text_output_includes_friendly_explanations(tmp_path, fake_ai_
     assert result.exit_code == 0
     assert 'Patch explanations:' in result.output
     assert 'NO_HARDCODED_SECRETS' in result.output
-    assert '비밀값을 코드 밖으로 옮겼어요' in result.output
+    assert 'Moved secrets out of code' in result.output
 
 
 def test_patch_cli_requires_slayer_yml(tmp_path, fake_ai_env, monkeypatch):
@@ -112,7 +112,7 @@ def test_patch_cli_requires_slayer_yml(tmp_path, fake_ai_env, monkeypatch):
     result = runner.invoke(app, ['patch', str(target)])
 
     assert result.exit_code == 2
-    assert '.slayer.yml에 ai 설정이 필요합니다' in result.stderr
+    assert '.slayer.yml needs an ai setting' in result.stderr
 
 
 def test_patch_cli_rejects_invalid_slayer_yml_ai(tmp_path, fake_ai_env, monkeypatch):
@@ -124,7 +124,7 @@ def test_patch_cli_rejects_invalid_slayer_yml_ai(tmp_path, fake_ai_env, monkeypa
     result = runner.invoke(app, ['patch', str(target)])
 
     assert result.exit_code == 2
-    assert 'ai 값이 잘못되었습니다' in result.stderr
+    assert 'invalid ai value' in result.stderr
 
 
 def test_patch_cli_auto_uses_detection_when_configured(tmp_path, fake_ai_env, monkeypatch):

@@ -6,56 +6,56 @@ DEFAULT_RULES: tuple[SLARule, ...] = (
     SLARule(
         id="NO_HARDCODED_SECRETS",
         name="NO_HARDCODED_SECRETS",
-        description="비밀번호나 API 키를 코드에 직접 넣으면 저장소가 노출될 때 인증 정보가 바로 악용됩니다.",
-        raw_nl="하드코딩된 비밀정보 금지",
+        description="Passwords and API keys in code can be stolen if the repository is exposed.",
+        raw_nl="Do not hardcode secrets",
         rule_type="NO_HARDCODED_SECRETS",
         severity="critical",
     ),
     SLARule(
         id="NO_NETWORK",
         name="NO_NETWORK",
-        description="검증되지 않은 주소로 외부 요청을 보내면 내부망 조회나 민감정보 전달이 일어날 수 있습니다.",
-        raw_nl="검증되지 않은 외부 네트워크 호출 금지",
+        description="Unverified external requests can expose internal services or send sensitive data to untrusted systems.",
+        raw_nl="Do not call unverified external networks",
         rule_type="NO_NETWORK",
         severity="critical",
     ),
     SLARule(
         id="NO_EXEC",
         name="NO_EXEC",
-        description="쉘 명령을 문자열로 실행하면 입력 한 줄로 서버 명령이 실행될 수 있습니다.",
-        raw_nl="쉘 실행 금지",
+        description="Shell command strings can let user input run server commands.",
+        raw_nl="Do not run shell commands from strings",
         rule_type="NO_EXEC",
         severity="critical",
     ),
     SLARule(
         id="SQL_PARAM_BINDING",
         name="SQL_PARAM_BINDING",
-        description="사용자 값을 SQL 문자열에 직접 끼워 넣으면 데이터 조회나 수정이 공격자 입력대로 바뀔 수 있습니다.",
-        raw_nl="SQL 파라미터 바인딩 강제",
+        description="Putting user values directly into SQL lets input change what the query does.",
+        raw_nl="Use SQL parameter binding",
         rule_type="SQL_PARAM_BINDING",
         severity="high",
     ),
     SLARule(
         id="NO_DEBUG_MODE",
         name="NO_DEBUG_MODE",
-        description="디버그 모드를 켜고 배포하면 서버 내부 정보와 환경설정이 그대로 노출될 수 있습니다.",
-        raw_nl="디버그 모드 배포 금지",
+        description="Debug mode in production can expose server details and settings.",
+        raw_nl="Do not deploy with debug mode",
         rule_type="NO_DEBUG_MODE",
         severity="high",
     ),
     SLARule(
         id="NO_WEAK_RANDOM",
         name="NO_WEAK_RANDOM",
-        description="토큰이나 인증값을 약한 난수로 만들면 공격자가 값을 예측해 세션을 탈취할 수 있습니다.",
-        raw_nl="보안 컨텍스트에서 약한 난수 금지",
+        description="Weak random numbers can make tokens and session values predictable.",
+        raw_nl="Do not use weak random values for security",
         rule_type="NO_WEAK_RANDOM",
         severity="high",
     ),
     SLARule(
         id="NO_BARE_EXCEPT",
         name="NO_BARE_EXCEPT",
-        description="예외를 비워 두고 삼키면 공격 징후와 장애 원인이 숨겨져 위험한 동작이 계속될 수 있습니다.",
-        raw_nl="빈 예외 처리 금지",
+        description="Empty exception handlers hide errors and possible attacks.",
+        raw_nl="Do not swallow exceptions",
         rule_type="NO_BARE_EXCEPT",
         severity="medium",
     ),
@@ -77,50 +77,50 @@ DEFAULT_RULES_BY_ID = {rule.id: rule for rule in DEFAULT_RULES}
 RULE_DETAILS: dict[str, dict[str, str]] = {
     "NO_HARDCODED_SECRETS": {
         "why": (
-            "Putting a password or API key in your code is like taping your house key to the front door.\n"
-            "  Bots scan GitHub and steal exposed secrets in under 3 minutes (GitGuardian)."
+            "Passwords and API keys in code are visible to anyone who can read the repository.\n"
+            "  Public scans can find exposed secrets quickly."
         ),
-        "fix": "Use os.environ.get('API_KEY') or process.env.API_KEY — keep secrets out of the code.",
+        "fix": "Use os.environ.get('API_KEY') or process.env.API_KEY. Keep secrets out of the code.",
     },
     "NO_EXEC": {
         "why": (
-            "Running a shell command as a string lets an attacker sneak in extra commands with a semicolon.\n"
-            "  One bad input → full server takeover. (CVSS 9.8 / Remote Code Execution)"
+            "Running a shell command as a string can let user input add extra commands.\n"
+            "  This can lead to remote command execution. (CVSS 9.8)"
         ),
-        "fix": "Use subprocess.run(['cmd', arg], shell=False) — pass arguments as a list, never a string.",
+        "fix": "Use subprocess.run(['cmd', arg], shell=False). Pass arguments as a list, never a string.",
     },
     "SQL_PARAM_BINDING": {
         "why": (
-            "Putting user input inside a SQL string lets attackers type '; DROP TABLE users;--\n"
-            "  and delete your entire database. (OWASP #3 — SQL Injection)"
+            "Putting user input inside a SQL string can change the query.\n"
+            "  Use bound values so input is treated as data. (OWASP #3 SQL Injection)"
         ),
-        "fix": "Use cursor.execute('SELECT ... WHERE name=?', (name,)) — let the driver handle quoting.",
+        "fix": "Use cursor.execute('SELECT ... WHERE name=?', (name,)). Let the driver handle quoting.",
     },
     "NO_NETWORK": {
         "why": (
-            "Fetching a URL typed by a user lets attackers hit private servers inside your cloud.\n"
-            "  One request to 169.254.169.254 can steal your AWS credentials. (SSRF)"
+            "Calling a user-provided URL can reach private cloud or internal network services.\n"
+            "  Restrict requests to approved destinations. (SSRF)"
         ),
         "fix": "Check the URL against an allow-list of trusted domains before making the request.",
     },
     "NO_DEBUG_MODE": {
         "why": (
-            "Shipping with debug=True turns on an interactive console anyone on the internet can reach.\n"
-            "  They can run any Python or JS code they want on your server. (CWE-16)"
+            "Debug mode can expose internal details and interactive tools.\n"
+            "  Keep it off unless the local developer has enabled it. (CWE-16)"
         ),
         "fix": "Use DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true' so it is off by default.",
     },
     "NO_WEAK_RANDOM": {
         "why": (
-            "Math.random() and random.random() are guessable — like rolling a dice with a pattern.\n"
-            "  An attacker can predict your tokens and take over accounts. (CWE-330)"
+            "Math.random() and random.random() are predictable for security use.\n"
+            "  Predictable tokens can let attackers access accounts. (CWE-330)"
         ),
         "fix": "Use secrets.token_hex(32) in Python or crypto.randomUUID() in JS for security tokens.",
     },
     "NO_BARE_EXCEPT": {
         "why": (
-            "An empty catch block hides errors like sweeping dirt under a rug.\n"
-            "  Attacks and crashes go unnoticed — average breach detection time: 207 days (IBM)."
+            "An empty catch or except block hides errors.\n"
+            "  Log or handle the error so failures are visible."
         ),
         "fix": "Use except Exception as e: logger.warning(e) so every problem gets logged.",
     },
@@ -138,38 +138,38 @@ RULE_ALIASES: dict[str, str] = {
 
 PATCH_EXPLANATION_TEMPLATES: dict[str, tuple[str, str, str]] = {
     "NO_HARDCODED_SECRETS": (
-        "비밀값을 코드 밖으로 옮겼어요",
-        "하드코딩된 키나 비밀번호 대신 환경 변수 조회를 사용하도록 바꿔 저장소 노출 시에도 실제 비밀값이 남지 않게 했어요.",
+        "Moved secrets out of code",
+        "The patch uses an environment variable instead of a hardcoded key or password, so the real secret is not stored in the repository.",
         RULE_GUIDANCE["NO_HARDCODED_SECRETS"],
     ),
     "NO_NETWORK": (
-        "검증되지 않은 외부 호출을 막았어요",
-        "사용자 입력이 네트워크 목적지로 직접 흘러가지 않도록 차단하거나 고정된 안전 경로만 쓰도록 패치했어요.",
+        "Blocked unverified external calls",
+        "The patch stops user input from directly choosing a network destination or limits it to a trusted endpoint.",
         RULE_GUIDANCE["NO_NETWORK"],
     ),
     "NO_EXEC": (
-        "쉘 명령 주입 경로를 제거했어요",
-        "문자열 쉘 실행을 인수 리스트 기반 실행이나 차단 동작으로 바꿔 입력값이 서버 명령으로 해석되지 않게 했어요.",
+        "Removed shell command injection path",
+        "The patch replaces string shell execution with argument-list execution or a blocked action, so input is not interpreted as a server command.",
         RULE_GUIDANCE["NO_EXEC"],
     ),
     "SQL_PARAM_BINDING": (
-        "SQL을 파라미터 바인딩으로 바꿨어요",
-        "사용자 값을 SQL 문자열에 직접 붙이지 않고 DB 드라이버의 바인딩 인자로 전달해 쿼리 구조가 바뀌지 않게 했어요.",
+        "Changed SQL to parameter binding",
+        "The patch sends user values as driver parameters instead of joining them into the SQL string, so input cannot change the query structure.",
         RULE_GUIDANCE["SQL_PARAM_BINDING"],
     ),
     "NO_DEBUG_MODE": (
-        "배포 기본값에서 디버그 모드를 껐어요",
-        "하드코딩된 debug=true를 환경 변수나 production-safe 조건으로 바꿔 내부 정보가 사용자에게 노출되지 않게 했어요.",
+        "Turned off debug mode by default",
+        "The patch replaces hardcoded debug=True with an environment check or a production-safe default, so internal details are not exposed to users.",
         RULE_GUIDANCE["NO_DEBUG_MODE"],
     ),
     "NO_WEAK_RANDOM": (
-        "예측 가능한 난수를 암호학적 난수로 교체했어요",
-        "보안 토큰·세션·OTP 생성에 쓰이는 약한 난수를 secrets 또는 crypto 모듈 기반으로 바꿔 값을 예측할 수 없게 했어요.",
+        "Changed predictable random values to secure random values",
+        "The patch uses secrets or crypto for security tokens, sessions, or OTP values, so attackers cannot predict them.",
         RULE_GUIDANCE["NO_WEAK_RANDOM"],
     ),
     "NO_BARE_EXCEPT": (
-        "삼켜지던 예외를 드러나게 했어요",
-        "빈 except/catch 블록에 구체적인 예외 처리나 로깅을 추가해 장애와 공격 징후가 숨지 않게 했어요.",
+        "Made swallowed exceptions visible",
+        "The patch adds specific handling or logging to empty except or catch blocks, so failures and possible attacks are visible.",
         RULE_GUIDANCE["NO_BARE_EXCEPT"],
     ),
 }
@@ -190,9 +190,9 @@ def patch_explanation_for(violation: Violation, file: str | None = None) -> Patc
     title, summary, guidance = PATCH_EXPLANATION_TEMPLATES.get(
         canonical,
         (
-            "보안 위반을 안전한 구현으로 바꿨어요",
-            "탐지된 취약 코드만 최소 범위로 수정해 기존 동작을 최대한 유지했어요.",
-            "탐지된 위반을 안전한 대안으로 바꾸세요.",
+            "Changed unsafe code to a safe implementation",
+            "The patch updates only the detected vulnerable code and keeps existing behavior where possible.",
+            "Replace the detected violation with a safe alternative.",
         ),
     )
     return PatchExplanation(

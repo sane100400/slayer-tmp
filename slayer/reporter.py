@@ -11,10 +11,10 @@ from slayer.models import PatchResult, ScanResult
 from slayer.rules import RULE_DETAILS, DEFAULT_RULES_BY_ID
 
 _SEVERITY_STYLE: dict[str, tuple[str, str]] = {
-    'critical': ('bold red',    '● CRITICAL'),
-    'high':     ('bold yellow', '▲ HIGH'),
-    'medium':   ('bold cyan',   '■ MEDIUM'),
-    'low':      ('dim',         '▪ LOW'),
+    'critical': ('bold red',    'CRITICAL'),
+    'high':     ('bold yellow', 'HIGH'),
+    'medium':   ('bold cyan',   'MEDIUM'),
+    'low':      ('dim',         'LOW'),
 }
 
 
@@ -39,11 +39,11 @@ def print_scan_rich(target: str | Path, result: ScanResult, console: Console | N
 
     for issue in result.syntax_errors:
         loc = f'{issue.file}:{issue.line}' if issue.line else issue.file
-        c.print(f'[yellow]⚠ syntax error[/]  {loc}  {issue.message}')
+        c.print(f'[yellow]syntax error[/]  {loc}  {issue.message}')
 
     if not result.violations:
         c.print(Rule(style='dim'))
-        c.print('[bold green]✓ No violations found — 🚀 Deployment Approved[/]\n')
+        c.print('[bold green]OK: no violations found. Deployment allowed.[/]\n')
         return
 
     # Group violations by file for cleaner output
@@ -55,7 +55,7 @@ def print_scan_rich(target: str | Path, result: ScanResult, console: Console | N
         rel = Path(file_path).name
         for v in violations:
             severity = _severity_of(v.rule_id)
-            sty, label = _SEVERITY_STYLE.get(severity, ('dim', '▪'))
+            sty, label = _SEVERITY_STYLE.get(severity, ('dim', 'INFO'))
             details = RULE_DETAILS.get(v.rule_id, {})
 
             # Header line
@@ -78,18 +78,18 @@ def print_scan_rich(target: str | Path, result: ScanResult, console: Console | N
             # Fix
             if details.get('fix'):
                 c.print()
-                c.print(f'   [green]→[/] [green]{details["fix"]}[/]')
+                c.print(f'   [green]Fix:[/] [green]{details["fix"]}[/]')
 
             c.print()
 
     c.print(Rule(style='dim'))
     count = len(result.violations)
     if result.deployable:
-        c.print('[bold green]🚀 Deployment Approved[/]\n')
+        c.print('[bold green]Deployment allowed[/]\n')
     else:
         c.print(
-            f'[bold red] {count} violation{"s" if count != 1 else ""}[/]  ·  '
-            f'[bold red]🔒 Deployment BLOCKED[/]'
+            f'[bold red] {count} violation{"s" if count != 1 else ""}[/]  -  '
+            f'[bold red]Deployment blocked[/]'
         )
         c.print(
             f'\n   [dim]Run [bold]slayer patch {Path(target)}[/] to fix automatically.[/]\n'
@@ -106,34 +106,34 @@ def print_patch_rich(target: str | Path, result: PatchResult, console: Console |
 
     for issue in result.syntax_errors:
         loc = f'{issue.file}:{issue.line}' if issue.line else issue.file
-        c.print(f'[yellow]⚠ syntax error[/]  {loc}  {issue.message}')
+        c.print(f'[yellow]syntax error[/]  {loc}  {issue.message}')
 
     for patched in result.patched_files:
-        c.print(f'[green]✓[/]  {patched} patched')
+        c.print(f'[green]OK[/]  {patched} patched')
 
     if result.patch_explanations:
         c.print()
         c.print('[bold]Patch explanations:[/]')
         for exp in result.patch_explanations:
             loc = f'{Path(exp.file).name}:{exp.line}' if exp.line else Path(exp.file).name
-            c.print(f'  [cyan]•[/] [bold]{exp.rule_name}[/]  [dim]{loc}[/]  — {exp.title}')
+            c.print(f'  [cyan]-[/] [bold]{exp.rule_name}[/]  [dim]{loc}[/]  - {exp.title}')
             c.print(f'    [dim]{exp.summary}[/]')
 
     c.print()
     c.print(Rule(style='dim'))
 
     if result.deployable:
-        c.print('[bold green]🚀 Deployment Approved[/]\n')
+        c.print('[bold green]Deployment allowed[/]\n')
     else:
         c.print('[bold red]Remaining violations:[/]')
         for v in result.remaining_violations:
             severity = _severity_of(v.rule_id)
-            sty, label = _SEVERITY_STYLE.get(severity, ('dim', '▪'))
+            sty, label = _SEVERITY_STYLE.get(severity, ('dim', 'INFO'))
             c.print(f'  [{sty}]{label}[/]  [bold]{v.rule_name}[/]  [dim]{Path(v.file).name}:{v.line}[/]')
         c.print()
 
 
-# ── Legacy string-based renderers (used for --format json; text path now uses Rich) ──
+# Legacy string-based renderers (used for --format json; text path now uses Rich).
 
 def render_scan_text(target: str | Path, result: ScanResult) -> str:
     """Fallback plain-text renderer (used only when Rich is unavailable)."""
@@ -142,18 +142,18 @@ def render_scan_text(target: str | Path, result: ScanResult) -> str:
         lines.append('No supported source files found')
     for issue in result.syntax_errors:
         location = f'{issue.file}:{issue.line}' if issue.line else issue.file
-        lines.append(f'⚠ syntax error  {location}  {issue.message}')
+        lines.append(f'syntax error  {location}  {issue.message}')
     for violation in result.violations:
         lines.append(
-            f"✗  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {violation.code_snippet.strip()}"
+            f"X  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {violation.code_snippet.strip()}"
         )
         details = RULE_DETAILS.get(violation.rule_id, {})
         if details.get('why'):
             lines.append(f"   {details['why'].splitlines()[0]}")
         if details.get('fix'):
-            lines.append(f"   → {details['fix']}")
+            lines.append(f"   Fix: {details['fix']}")
         lines.append('')
-    lines.append('🚀 Deployment Approved' if result.deployable else f'Deployment BLOCKED — {len(result.violations)} violation(s)')
+    lines.append('Deployment allowed' if result.deployable else f'Deployment blocked - {len(result.violations)} violation(s)')
     return '\n'.join(lines) + '\n'
 
 
@@ -163,25 +163,25 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
     if result.ai_used != 'none':
         lines.append(f'Patching via {result.ai_used}...')
     for patched in result.patched_files:
-        lines.append(f'✓  {patched} patched')
+        lines.append(f'OK  {patched} patched')
     if result.patch_explanations:
         lines.append('')
         lines.append('Patch explanations:')
         for exp in result.patch_explanations:
             loc = f'{Path(exp.file).name}:{exp.line}' if exp.line else Path(exp.file).name
-            lines.append(f'• {exp.rule_name}  {loc} — {exp.title}')
+            lines.append(f'- {exp.rule_name}  {loc} - {exp.title}')
             lines.append(f'  {exp.summary}')
     for issue in result.syntax_errors:
         location = f'{issue.file}:{issue.line}' if issue.line else issue.file
-        lines.append(f'⚠ syntax error  {location}  {issue.message}')
+        lines.append(f'syntax error  {location}  {issue.message}')
     if result.deployable:
         lines.append('')
-        lines.append('🚀 Deployment Approved')
+        lines.append('Deployment allowed')
     else:
         lines.append('')
         lines.append('Remaining violations:')
         for violation in result.remaining_violations:
             lines.append(
-                f"✗  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {violation.code_snippet.strip()}"
+                f"X  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {violation.code_snippet.strip()}"
             )
     return '\n'.join(lines) + '\n'

@@ -206,7 +206,7 @@ def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]
 
             if dotted in EXEC_CALLS:
                 has_shell_true = any(kw.arg == 'shell' and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords)
-                # os.system / os.popen always use a shell — always flag.
+                # os.system / os.popen always use a shell; always flag.
                 # For subprocess.*, only flag when shell=True is explicit.
                 if dotted.startswith('os.') or has_shell_true:
                     violations.append(_violation(rules['NO_EXEC'], path, lineno, lines))
