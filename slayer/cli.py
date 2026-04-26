@@ -16,6 +16,7 @@ app = typer.Typer(add_completion=False, help='SLAyer security scanner and patche
 console = Console(stderr=True)
 
 _CONFIG_FILE = Path('.slayer.yml')
+_VALID_AI_CHOICES = ('claude', 'codex', 'gemini', 'auto')
 
 
 class OutputFormatEnum(str, Enum):
@@ -23,16 +24,35 @@ class OutputFormatEnum(str, Enum):
     json = 'json'
 
 
-def _read_saved_ai() -> str | None:
+class SlayerConfigError(RuntimeError):
+    pass
+
+
+def _read_ai_value() -> str | None:
     if not _CONFIG_FILE.exists():
         return None
     for line in _CONFIG_FILE.read_text().splitlines():
         line = line.strip()
         if line.startswith('ai:'):
-            value = line.split(':', 1)[1].strip()
-            if value in ('claude', 'codex', 'gemini', 'auto'):
-                return value
+            return line.split(':', 1)[1].strip()
     return None
+
+
+def _read_saved_ai() -> str | None:
+    value = _read_ai_value()
+    return value if value in _VALID_AI_CHOICES else None
+
+
+def _read_required_ai() -> str:
+    if not _CONFIG_FILE.exists():
+        raise SlayerConfigError('.slayer.yml에 ai 설정이 필요합니다. `slayer model codex`처럼 먼저 모델을 저장하세요.')
+
+    value = _read_ai_value()
+    if value is None:
+        raise SlayerConfigError('.slayer.yml에 ai: claude|codex|gemini|auto 설정이 필요합니다.')
+    if value not in _VALID_AI_CHOICES:
+        raise SlayerConfigError(f'.slayer.yml의 ai 값이 잘못되었습니다: {value!r}. claude, codex, gemini, auto 중 하나를 사용하세요.')
+    return value
 
 
 def _write_saved_ai(ai_name: str) -> None:
@@ -85,10 +105,13 @@ def patch(
     path: str = typer.Argument('.', help='Target file or directory'),
     output_format: OutputFormatEnum = typer.Option(OutputFormatEnum.text, '--format', help='Output format'),
 ) -> None:
-    selected_ai = _read_saved_ai() or 'auto'
     target = Path(path)
     try:
+        selected_ai = _read_required_ai()
         result = patch_path(target, selected_ai=selected_ai)
+    except SlayerConfigError as exc:
+        console.print(f'[red]Patch failed:[/red] {exc}')
+        raise typer.Exit(code=2)
     except AICliError as exc:
         console.print(f'[red]Patch failed:[/red] {exc}')
         raise typer.Exit(code=2)
@@ -105,11 +128,9 @@ def model(
     ai_name: Optional[str] = typer.Argument(None, help='AI CLI to use: claude | codex | gemini | auto'),
 ) -> None:
     """Show or set the AI CLI used for patching."""
-    valid = ('claude', 'codex', 'gemini', 'auto')
-
     if ai_name is not None:
-        if ai_name not in valid:
-            console.print(f'[red]Unknown AI CLI:[/red] {ai_name!r}. Choose from: {", ".join(valid)}')
+        if ai_name not in _VALID_AI_CHOICES:
+            console.print(f'[red]Unknown AI CLI:[/red] {ai_name!r}. Choose from: {", ".join(_VALID_AI_CHOICES)}')
             raise typer.Exit(code=2)
         _write_saved_ai(ai_name)
         console.print(f'[green]✓[/green] Saved: ai = {ai_name} → .slayer.yml')
