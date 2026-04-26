@@ -50,7 +50,8 @@ body{
 
 /* ── SLIDE ── */
 .slide{
-  min-height:100svh;
+  height:100vh;
+  max-height:100vh;
   scroll-snap-align:start;
   position:relative;
   overflow:hidden;
@@ -685,6 +686,31 @@ code.inline{
 @media(max-width:600px){
   .vuln-grid{grid-template-columns:1fr 1fr}
   .paper-grid{grid-template-columns:1fr}
+}
+
+/* ── PRINT / PDF EXPORT ── */
+@page{margin:0;size:landscape}
+@media print{
+  html{
+    scroll-snap-type:none;
+    background-image:none;
+  }
+  body{
+    background-image:none;
+  }
+  .nav,.slide-num{display:none!important}
+  .slide{
+    height:100vh;
+    max-height:100vh;
+    page-break-after:always;
+    break-after:page;
+    page-break-inside:avoid;
+    overflow:hidden;
+    background-attachment:initial;
+  }
+  .slide::before{
+    background-attachment:initial;
+  }
 }
 </style>
 </head>
