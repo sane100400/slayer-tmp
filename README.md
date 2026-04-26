@@ -188,7 +188,9 @@ pip install -e ".[dev]"
 
 ### slayer-bench-v0 — 수작업 큐레이션
 
-28 케이스 (22 취약 + 6 FP-free) 전수 실행 결과:
+32 케이스 (22 취약 + 6 FP-free + 4 blind_spot) 전수 실행 결과:
+
+**In-scope 탐지 (직접 패턴):**
 
 | 지표 | 값 |
 |------|-----|
@@ -199,6 +201,15 @@ pip install -e ".[dev]"
 | **Precision** | **1.000** |
 | **Recall** | **1.000** |
 | **F1** | **1.000** |
+
+**Blind spot 케이스 (알려진 한계 — 탐지하지 않음):**
+
+| 케이스 | 룰 | 이유 |
+|--------|-----|------|
+| 변수 경유 SSRF | NO_NETWORK | URL을 부분 조합 후 호출 — 직접 사용자 입력 아님 |
+| 함수 리턴 시크릿 | NO_HARDCODED_SECRETS | `return "sk-..."` 형태 — 직접 대입 패턴만 탐지 |
+| split() 셸 인젝션 | NO_EXEC | `shell=False` + `cmd.split()` — 셸 체크 통과하나 여전히 취약 |
+| 배열 조인 SQL | SQL_PARAM_BINDING | `parts.join(' ')` 조합 — template literal/concat 패턴 아님 |
 
 룰별 케이스 수:
 
