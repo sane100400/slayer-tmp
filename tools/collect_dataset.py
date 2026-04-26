@@ -31,22 +31,37 @@ API_BASE = "https://api.github.com"
 # type: "code"  → /search/code API (filename: 기반)
 # type: "repo"  → /search/repositories API (topic: 기반)
 SEARCH_QUERIES = [
-    # Claude Code 빌드 — CLAUDE.md 보유 레포
+    # Claude Code 빌드 — CLAUDE.md 보유 레포 (Python)
     {"type": "code", "filename": "CLAUDE.md", "extra": "flask"},
     {"type": "code", "filename": "CLAUDE.md", "extra": "fastapi"},
     {"type": "code", "filename": "CLAUDE.md", "extra": "django"},
     {"type": "code", "filename": "CLAUDE.md", "extra": "requests"},
-    # Cursor 빌드 — .cursorrules 보유 레포
+    # Claude Code 빌드 — CLAUDE.md 보유 레포 (JS/TS)
+    {"type": "code", "filename": "CLAUDE.md", "extra": "express"},
+    {"type": "code", "filename": "CLAUDE.md", "extra": "nextjs"},
+    {"type": "code", "filename": "CLAUDE.md", "extra": "react"},
+    # Cursor 빌드 — .cursorrules 보유 레포 (Python)
     {"type": "code", "filename": ".cursorrules", "extra": "flask"},
     {"type": "code", "filename": ".cursorrules", "extra": "fastapi"},
-    {"type": "code", "filename": ".cursorrules", "extra": "django"},
+    # Cursor 빌드 — .cursorrules 보유 레포 (JS/TS)
+    {"type": "code", "filename": ".cursorrules", "extra": "express"},
+    {"type": "code", "filename": ".cursorrules", "extra": "nextjs"},
     # 명시적 토픽
     {"type": "repo", "query": "topic:vibe-coding language:python"},
+    {"type": "repo", "query": "topic:vibe-coding language:javascript"},
+    {"type": "repo", "query": "topic:vibe-coding language:typescript"},
     {"type": "repo", "query": "topic:built-with-claude language:python"},
-    {"type": "repo", "query": "topic:built-with-cursor language:python"},
+    {"type": "repo", "query": "topic:built-with-claude language:javascript"},
+    {"type": "repo", "query": "topic:built-with-cursor language:typescript"},
 ]
 
-WEB_KEYWORDS = {"flask", "fastapi", "django", "requests", "uvicorn", "starlette", "tornado"}
+CODE_EXTENSIONS = {".py", ".js", ".jsx", ".ts", ".tsx"}
+WEB_KEYWORDS = {
+    # Python
+    "flask", "fastapi", "django", "requests", "uvicorn", "starlette", "tornado",
+    # JS/TS
+    "express", "fastify", "next", "nuxt", "axios", "fetch", "react", "vue", "koa",
+}
 
 
 def api_get(url: str, params: dict = None) -> dict:
@@ -120,7 +135,7 @@ def search_repos_by_file(filename: str, extra: str = "", max_pages: int = 3) -> 
     return repos
 
 
-def get_py_files(owner: str, repo: str, path: str = "", depth: int = 0) -> list[dict]:
+def get_web_files(owner: str, repo: str, path: str = "", depth: int = 0) -> list[dict]:
     if depth > 3:
         return []
     try:
@@ -132,11 +147,14 @@ def get_py_files(owner: str, repo: str, path: str = "", depth: int = 0) -> list[
 
     files = []
     for item in items:
-        if item["type"] == "file" and item["name"].endswith(".py"):
+        ext = "." + item["name"].rsplit(".", 1)[-1] if "." in item["name"] else ""
+        if item["type"] == "file" and ext in CODE_EXTENSIONS:
             files.append(item)
         elif item["type"] == "dir" and depth < 2:
-            time.sleep(0.3)
-            files.extend(get_py_files(owner, repo, item["path"], depth + 1))
+            # node_modules / .git 등 제외
+            if item["name"] not in {"node_modules", ".git", "__pycache__", "dist", "build", ".next"}:
+                time.sleep(0.3)
+                files.extend(get_web_files(owner, repo, item["path"], depth + 1))
     return files
 
 
@@ -161,8 +179,8 @@ def collect(target: int, output_dir: Path):
     collected = 0
     seen_repos = set()
 
-    # 이미 수집된 파일 수 확인
-    existing = list(output_dir.rglob("*.py"))
+    # 이미 수집된 파일 수 확인 (py/js/ts 모두)
+    existing = [f for f in output_dir.rglob("*") if f.suffix in CODE_EXTENSIONS]
     if existing:
         collected = len(existing)
         print(f"  기존 수집 파일: {collected}개")
@@ -194,11 +212,11 @@ def collect(target: int, output_dir: Path):
             owner, repo_name = full_name.split("/", 1)
             print(f"  📦 {full_name} 탐색 중...", end="\r")
 
-            py_files = get_py_files(owner, repo_name)
+            web_files = get_web_files(owner, repo_name)
             time.sleep(0.5)
 
             saved = 0
-            for f in py_files[:20]:  # 레포당 최대 20개
+            for f in web_files[:20]:  # 레포당 최대 20개
                 if collected >= target:
                     break
 
@@ -213,14 +231,17 @@ def collect(target: int, output_dir: Path):
                 out_path = output_dir / safe_name
                 out_path.write_text(content, encoding="utf-8")
 
+                ext = "." + f["path"].rsplit(".", 1)[-1] if "." in f["path"] else ".py"
                 with open(meta_path, "a") as mf:
                     mf.write(json.dumps({
                         "file": str(out_path.name),
                         "repo": full_name,
                         "path": f["path"],
+                        "lang": ext.lstrip("."),
                         "size": f["size"],
                         "stars": repo.get("stargazers_count", 0),
                         "topics": repo.get("topics", []),
+                        "source": "github",
                     }, ensure_ascii=False) + "\n")
 
                 collected += 1

@@ -71,29 +71,30 @@ AI 코드 생성 도구로 작성된 Python 코드에서 **반복적으로 등�
 | 개발 예제 그대로 배포 | `DEBUG=True`, 하드코딩 크레덴셜을 교체 안 함 |
 | 에러 제거 요청 | `except: pass` — "에러 없애줘" 프롬프트 결과 |
 
-### Vibe Coding Ruleset (7종) — Python · JS · TS 공통
+### Vibe Coding Ruleset — 데이터셋 분석 후 확정
 
-| ID | Rule Type | Python 탐지 패턴 | JS/TS 탐지 패턴 | Severity |
-|----|-----------|----------------|----------------|----------|
-| V-01 | NO_HARDCODED_SECRETS | `API_KEY = "sk-..."` | `const API_KEY = "sk-..."` | critical |
-| V-02 | NO_NETWORK | `requests.get(url)` (검증 없음) | `fetch(url)` / `axios.get(url)` (검증 없음) | critical |
-| V-03 | NO_EXEC | `subprocess.run(cmd, shell=True)` | `child_process.exec(cmd)` (문자열) | critical |
-| V-04 | SQL_PARAM_BINDING | `` f"SELECT ... {x}" `` | `` `SELECT ... ${x}` `` (템플릿 리터럴) | high |
-| V-05 | NO_DEBUG_MODE | `DEBUG = True` / `app.run(debug=True)` | `debug: true` / `NODE_ENV !== 'production'` | high |
-| V-06 | NO_WEAK_RANDOM | `random.random()` in security context | `Math.random()` in security context | high |
-| V-07 | NO_BARE_EXCEPT | `except: pass` | `catch {}` / `catch (e) {}` (빈 블록) | medium |
+> **미확정**: 7종 룰은 GitHub + HuggingFace Spaces 수집 데이터셋(Python/JS/TS)에서 관측된 빈도를 기반으로 확정한다.
+> 데이터 없이 선정하지 않는다.
 
-### 패치 전략 (실제 동작하는 코드로 교체)
+수집 완료 후 `tools/analyze_hf_dataset.py --local dataset/` 실행 결과로 채울 것:
+
+| ID | Rule Type | Python 탐지 패턴 | JS/TS 탐지 패턴 | Severity | 관측 빈도 |
+|----|-----------|----------------|----------------|----------|----------|
+| V-01 | TBD | — | — | — | — |
+| V-02 | TBD | — | — | — | — |
+| V-03 | TBD | — | — | — | — |
+| V-04 | TBD | — | — | — | — |
+| V-05 | TBD | — | — | — | — |
+| V-06 | TBD | — | — | — | — |
+| V-07 | TBD | — | — | — | — |
+
+### 패치 전략 (언어별, 실제 동작하는 코드로 교체)
+
+룰 확정 후 채울 것. AI CLI는 파일 확장자로 언어를 자동 판별하여 패치 프롬프트에 명시한다.
 
 | Rule | Python 패치 | JS/TS 패치 |
 |------|------------|-----------|
-| NO_HARDCODED_SECRETS | `os.environ.get("API_KEY", "")` | `process.env.API_KEY ?? ""` |
-| NO_NETWORK | `raise NotImplementedError("외부 호출 차단")` | `throw new Error("외부 호출 차단")` |
-| NO_EXEC | `subprocess.run(["cmd", arg], shell=False)` | `execFile("cmd", [arg])` |
-| SQL_PARAM_BINDING | `cursor.execute("SELECT ... ?", (x,))` | `db.query("SELECT ... ?", [x])` |
-| NO_DEBUG_MODE | `os.environ.get("DEBUG","false").lower()=="true"` | `process.env.NODE_ENV === 'development'` |
-| NO_WEAK_RANDOM | `secrets.token_hex(32)` | `crypto.randomUUID()` / `crypto.getRandomValues()` |
-| NO_BARE_EXCEPT | `except Exception as e: logger.warning(e)` | `catch (e) { console.error(e); }` |
+| (확정 후 추가) | | |
 
 ---
 
