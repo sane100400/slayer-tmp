@@ -111,6 +111,14 @@ def print_patch_rich(target: str | Path, result: PatchResult, console: Console |
     for patched in result.patched_files:
         c.print(f'[green]✓[/]  {patched} patched')
 
+    if result.patch_explanations:
+        c.print()
+        c.print('[bold]Patch explanations:[/]')
+        for exp in result.patch_explanations:
+            loc = f'{Path(exp.file).name}:{exp.line}' if exp.line else Path(exp.file).name
+            c.print(f'  [cyan]•[/] [bold]{exp.rule_name}[/]  [dim]{loc}[/]  — {exp.title}')
+            c.print(f'    [dim]{exp.summary}[/]')
+
     c.print()
     c.print(Rule(style='dim'))
 
@@ -156,6 +164,13 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
         lines.append(f'Patching via {result.ai_used}...')
     for patched in result.patched_files:
         lines.append(f'✓  {patched} patched')
+    if result.patch_explanations:
+        lines.append('')
+        lines.append('Patch explanations:')
+        for exp in result.patch_explanations:
+            loc = f'{Path(exp.file).name}:{exp.line}' if exp.line else Path(exp.file).name
+            lines.append(f'• {exp.rule_name}  {loc} — {exp.title}')
+            lines.append(f'  {exp.summary}')
     for issue in result.syntax_errors:
         location = f'{issue.file}:{issue.line}' if issue.line else issue.file
         lines.append(f'⚠ syntax error  {location}  {issue.message}')

@@ -55,9 +55,21 @@ class ScanResult(BaseModel):
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
 
 
+class PatchExplanation(BaseModel):
+    file: str
+    rule_id: str
+    rule_name: str
+    line: int
+    title: str
+    summary: str
+    guidance: str
+    reference: str = "spec.md"
+
+
 class PatchResult(BaseModel):
     patched_files: list[str] = Field(default_factory=list)
     diffs: dict[str, str] = Field(default_factory=dict)
+    patch_explanations: list[PatchExplanation] = Field(default_factory=list)
     remaining_violations: list[Violation] = Field(default_factory=list)
     deployable: bool = True
     ai_used: str = "none"
