@@ -10,7 +10,7 @@ SECRET_ASSIGN_RE = re.compile(
     r'(?ix)(?:const|let|var)?\s*[A-Za-z_$][\w$]*(?:password|passwd|pwd|api_?key|secret|token|credential)[\w$]*\s*=\s*(["\'])(?P<value>[^"\']{4,})\1'
 )
 PROVIDER_PATTERNS = (
-    re.compile(r'sk-[A-Za-z0-9]{20,}'),
+    re.compile(r'sk-[A-Za-z0-9-]{20,}'),
     re.compile(r'ghp_[A-Za-z0-9]{36}'),
     re.compile(r'AKIA[0-9A-Z]{16}'),
     re.compile(r'-----BEGIN (?:RSA|EC|DSA|OPENSSH|PGP) PRIVATE KEY-----'),
