@@ -1,0 +1,24 @@
+{
+  "records": [
+    {
+      "record_type": "secret_pattern",
+      "language": "shared",
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "regex": "AKIA[0-9A-Z]{16}",
+      "provider": "aws",
+      "source_datasets": [
+        "creddata"
+      ]
+    },
+    {
+      "record_type": "secret_pattern",
+      "language": "shared",
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "regex": "-----BEGIN (?:RSA|EC|DSA|OPENSSH|PGP) PRIVATE KEY-----",
+      "provider": "private_key",
+      "source_datasets": [
+        "creddata"
+      ]
+    }
+  ]
+}

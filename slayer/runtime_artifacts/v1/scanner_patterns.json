@@ -1,0 +1,76 @@
+{
+  "patterns": [
+    {
+      "pattern_id": "cvefixes-001",
+      "rule_id": "SQL_PARAM_BINDING",
+      "language": "python",
+      "regex": "cursor\\.execute\\(f[\"\\']SELECT .*\\{",
+      "source_datasets": [
+        "cvefixes"
+      ],
+      "description": "",
+      "context_keywords": [
+        "sql",
+        "query"
+      ]
+    },
+    {
+      "pattern_id": "primevul-001",
+      "rule_id": "NO_NETWORK",
+      "language": "python",
+      "regex": "requests\\.(?:get|post)\\(.*(?:req\\.|request\\.|user_url|target_url)",
+      "source_datasets": [
+        "primevul"
+      ],
+      "description": "",
+      "context_keywords": [
+        "ssrf",
+        "proxy"
+      ]
+    },
+    {
+      "pattern_id": "megavul-001",
+      "rule_id": "NO_DEBUG_MODE",
+      "language": "python",
+      "regex": "app\\.run\\(.*debug\\s*=\\s*True",
+      "source_datasets": [
+        "megavul"
+      ],
+      "description": "",
+      "context_keywords": []
+    },
+    {
+      "pattern_id": "megavul-002",
+      "rule_id": "NO_WEAK_RANDOM",
+      "language": "javascript",
+      "regex": "(token|session|reset).*Math\\.random",
+      "source_datasets": [
+        "megavul"
+      ],
+      "description": "",
+      "context_keywords": []
+    },
+    {
+      "pattern_id": "diversevul-001",
+      "rule_id": "NO_NETWORK",
+      "language": "javascript",
+      "regex": "fetch\\(\\s*`.*\\$\\{(?:req|request|query)",
+      "source_datasets": [
+        "diversevul"
+      ],
+      "description": "",
+      "context_keywords": []
+    },
+    {
+      "pattern_id": "securityeval-001",
+      "rule_id": "NO_BARE_EXCEPT",
+      "language": "python",
+      "regex": "except\\s*:\\s*(?:pass|return None)",
+      "source_datasets": [
+        "securityeval"
+      ],
+      "description": "",
+      "context_keywords": []
+    }
+  ]
+}

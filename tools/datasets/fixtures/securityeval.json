@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "record_type": "scanner_pattern",
+      "language": "python",
+      "rule_id": "NO_BARE_EXCEPT",
+      "regex": "except\\s*:\\s*(?:pass|return None)",
+      "source_datasets": [
+        "securityeval"
+      ]
+    },
+    {
+      "record_type": "benchmark_case",
+      "rule_id": "NO_EXEC",
+      "language": "python",
+      "source_datasets": [
+        "securityeval"
+      ]
+    }
+  ]
+}

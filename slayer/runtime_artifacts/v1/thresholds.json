@@ -1,0 +1,8 @@
+{
+  "scanner_precision_min": 0.7,
+  "scanner_recall_min": 0.7,
+  "patch_rescan_pass_min": 0.7,
+  "patch_syntax_pass_min": 0.9,
+  "secret_precision_min": 0.85,
+  "ai_code_recall_min": 0.7
+}

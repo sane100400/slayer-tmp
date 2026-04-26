@@ -1,0 +1,12 @@
+{
+  "records": [
+    {
+      "record_type": "benchmark_case",
+      "rule_id": "NO_NETWORK",
+      "language": "python",
+      "source_datasets": [
+        "aicgseceval"
+      ]
+    }
+  ]
+}

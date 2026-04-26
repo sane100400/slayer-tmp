@@ -1,0 +1,15 @@
+{
+  "records": [
+    {
+      "record_type": "patch_example",
+      "language": "javascript",
+      "rule_id": "NO_EXEC",
+      "before": "exec(`analyze ${filename}`)",
+      "after": "execFile(\"analyze\", [filename])",
+      "source_datasets": [
+        "bigvul"
+      ],
+      "notes": "Cross-language adaptation for runtime recipe provenance."
+    }
+  ]
+}

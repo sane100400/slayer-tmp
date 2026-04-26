@@ -1,0 +1,29 @@
+{
+  "records": [
+    {
+      "record_type": "scanner_pattern",
+      "language": "python",
+      "rule_id": "SQL_PARAM_BINDING",
+      "regex": "cursor\\.execute\\(f[\"\\']SELECT .*\\{",
+      "before": "cursor.execute(f\"SELECT * FROM users WHERE name = '{name}'\")",
+      "after": "cursor.execute(\"SELECT * FROM users WHERE name = ?\", (name,))",
+      "context_keywords": [
+        "sql",
+        "query"
+      ],
+      "source_datasets": [
+        "cvefixes"
+      ]
+    },
+    {
+      "record_type": "patch_example",
+      "language": "python",
+      "rule_id": "NO_EXEC",
+      "before": "subprocess.run(f\"analyze {filename}\", shell=True, capture_output=True)",
+      "after": "subprocess.run([\"analyze\", filename], shell=False, capture_output=True)",
+      "source_datasets": [
+        "cvefixes"
+      ]
+    }
+  ]
+}

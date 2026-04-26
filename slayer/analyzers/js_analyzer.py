@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from slayer.artifact_store import RuntimeArtifactBundle
 from slayer.models import Violation
 from slayer.rules import DEFAULT_RULES_BY_ID
 
@@ -27,9 +28,7 @@ SECURITY_CONTEXT_WORDS = ("token", "secret", "password", "session", "otp", "auth
 
 
 def _snippet(lines: list[str], lineno: int) -> str:
-    if 1 <= lineno <= len(lines):
-        return lines[lineno - 1].rstrip()
-    return ""
+    return lines[lineno - 1].rstrip() if 1 <= lineno <= len(lines) else ""
 
 
 def _mask_placeholder(value: str) -> bool:
@@ -62,17 +61,52 @@ def _is_safe_literal(expr: str) -> bool:
     expr = expr.strip()
     if '${' in expr:
         return False
-    if (expr.startswith('"') and expr.endswith('"')) or (expr.startswith("'") and expr.endswith("'")):
-        return True
-    return False
+    return (expr.startswith('"') and expr.endswith('"')) or (expr.startswith("'") and expr.endswith("'"))
 
 
 def _line_number(source: str, index: int) -> int:
     return source.count('\n', 0, index) + 1
 
 
-def analyze(path: Path, source: str) -> list[Violation]:
+def _artifact_secret_patterns(bundle: RuntimeArtifactBundle | None) -> list[re.Pattern[str]]:
+    if bundle is None:
+        return []
+    return [
+        re.compile(artifact.regex)
+        for artifact in bundle.secret_patterns
+        if not artifact.languages or 'javascript' in artifact.languages or 'typescript' in artifact.languages or 'shared' in artifact.languages
+    ]
+
+
+def _artifact_scanner_patterns(bundle: RuntimeArtifactBundle | None, language: str) -> list[tuple[re.Pattern[str], str]]:
+    if bundle is None:
+        return []
+    overlays: list[tuple[re.Pattern[str], str]] = []
+    for artifact in bundle.scanner_patterns:
+        if artifact.language not in {language, 'javascript'}:
+            continue
+        if artifact.rule_id in DEFAULT_RULES_BY_ID:
+            overlays.append((re.compile(artifact.regex), artifact.rule_id))
+    return overlays
+
+
+def _dedupe(violations: list[Violation]) -> list[Violation]:
+    seen: set[tuple[str, str, int]] = set()
+    deduped: list[Violation] = []
+    for violation in violations:
+        key = (violation.rule_id, violation.file, violation.line)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(violation)
+    return deduped
+
+
+def analyze(path: Path, source: str, artifact_bundle: RuntimeArtifactBundle | None = None) -> list[Violation]:
     lines = source.splitlines()
+    language = 'typescript' if path.suffix.lower() in {'.ts', '.tsx'} else 'javascript'
+    artifact_secret_patterns = _artifact_secret_patterns(artifact_bundle)
+    artifact_scanner_patterns = _artifact_scanner_patterns(artifact_bundle, language)
     violations: list[Violation] = []
 
     for lineno, line in enumerate(lines, 1):
@@ -80,9 +114,18 @@ def analyze(path: Path, source: str) -> list[Violation]:
         if match and not _mask_placeholder(match.group('value')):
             violations.append(_violation('NO_HARDCODED_SECRETS', path, lineno, lines))
             continue
+        provider_hit = False
         for pattern in PROVIDER_PATTERNS:
             provider_match = pattern.search(line)
             if provider_match and not _mask_placeholder(provider_match.group(0)):
+                violations.append(_violation('NO_HARDCODED_SECRETS', path, lineno, lines))
+                provider_hit = True
+                break
+        if provider_hit:
+            continue
+        for pattern in artifact_secret_patterns:
+            artifact_match = pattern.search(line)
+            if artifact_match and not _mask_placeholder(artifact_match.group(0)):
                 violations.append(_violation('NO_HARDCODED_SECRETS', path, lineno, lines))
                 break
 
@@ -95,18 +138,17 @@ def analyze(path: Path, source: str) -> list[Violation]:
 
         if EXEC_RE.search(line):
             violations.append(_violation('NO_EXEC', path, lineno, lines))
-
         if SQL_TEMPLATE_RE.search(line) or SQL_CONCAT_RE.search(line):
             violations.append(_violation('SQL_PARAM_BINDING', path, lineno, lines))
-
         if DEBUG_RE.search(line):
             violations.append(_violation('NO_DEBUG_MODE', path, lineno, lines))
-
         if WEAK_RANDOM_RE.search(line) and any(word in line.lower() for word in SECURITY_CONTEXT_WORDS):
             violations.append(_violation('NO_WEAK_RANDOM', path, lineno, lines))
+        for pattern, rule_id in artifact_scanner_patterns:
+            if pattern.search(line):
+                violations.append(_violation(rule_id, path, lineno, lines))
 
     for match in EMPTY_CATCH_RE.finditer(source):
         lineno = _line_number(source, match.start())
         violations.append(_violation('NO_BARE_EXCEPT', path, lineno, lines))
-
-    return violations
+    return _dedupe(violations)

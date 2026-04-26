@@ -1,0 +1,14 @@
+{
+  "records": [
+    {
+      "record_type": "patch_example",
+      "language": "python",
+      "rule_id": "NO_DEBUG_MODE",
+      "before": "DEBUG = True",
+      "after": "DEBUG = os.environ.get(\"DEBUG\", \"false\").lower() == \"true\"",
+      "source_datasets": [
+        "vul4j"
+      ]
+    }
+  ]
+}

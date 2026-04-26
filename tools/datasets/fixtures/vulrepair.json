@@ -1,0 +1,14 @@
+{
+  "records": [
+    {
+      "record_type": "patch_example",
+      "language": "python",
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "before": "API_KEY = \"sk-prod-abc123secretkey9999\"",
+      "after": "API_KEY = os.environ.get(\"API_KEY\", \"\")",
+      "source_datasets": [
+        "vulrepair"
+      ]
+    }
+  ]
+}

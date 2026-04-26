@@ -53,6 +53,7 @@ class ScanResult(BaseModel):
     deployable: bool = True
     scanned_files: list[str] = Field(default_factory=list)
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
+    artifact_version: str = "v1"
 
 
 class PatchResult(BaseModel):
@@ -63,3 +64,4 @@ class PatchResult(BaseModel):
     ai_used: str = "none"
     scanned_files: list[str] = Field(default_factory=list)
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
+    artifact_version: str = "v1"

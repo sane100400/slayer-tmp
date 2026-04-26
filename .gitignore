@@ -22,8 +22,13 @@ src-tauri/.cargo/
 *.egg-info/
 backend/dist/
 
-# Dataset (vibe coding samples — local only, do not commit)
-dataset/
+# Dataset (generated sources stay ignored; curated evaluator fixtures are versioned)
+dataset/*
+!dataset/slayer-bench-v0/
+!dataset/slayer-bench-v0/**
+!dataset/ai-bench-v0/
+!dataset/ai-bench-v0/**
+dataset/sources/
 
 # RAG index (generated from dataset)
 tools/.chroma_index/

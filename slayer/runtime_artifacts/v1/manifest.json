@@ -1,0 +1,198 @@
+{
+  "version": "v1",
+  "generated_at": "2026-04-26T04:17:17.640685+00:00",
+  "sources": [
+    {
+      "dataset_id": "secretbench",
+      "role": "secret_runtime_eval",
+      "home": "https://github.com/setu1421/SecretBench",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used for secret regex/provider coverage."
+    },
+    {
+      "dataset_id": "fpsecretbench",
+      "role": "secret_runtime_eval",
+      "home": "https://github.com/setu1421/FPSecretBench",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used for placeholder/false-positive suppression patterns."
+    },
+    {
+      "dataset_id": "creddata",
+      "role": "secret_runtime_eval",
+      "home": "https://github.com/SRI-CSL/CredData",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used for secret regex/provider coverage."
+    },
+    {
+      "dataset_id": "cvefixes",
+      "role": "runtime_scanner_patch",
+      "home": "https://github.com/secureIT-project/CVEfixes",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used for scanner overlays, patch recipes, and patch evaluation provenance."
+    },
+    {
+      "dataset_id": "primevul",
+      "role": "runtime_scanner_reference",
+      "home": "https://github.com/DLVulDet/PrimeVul",
+      "languages": [
+        "python",
+        "javascript"
+      ],
+      "notes": "Used as mined scanner-pattern provenance rather than a direct runtime corpus."
+    },
+    {
+      "dataset_id": "megavul",
+      "role": "runtime_scanner_reference",
+      "home": "https://github.com/Icyrockton/MegaVul",
+      "languages": [
+        "python",
+        "javascript"
+      ],
+      "notes": "Used as mined scanner-pattern provenance rather than a direct runtime corpus."
+    },
+    {
+      "dataset_id": "bigvul",
+      "role": "runtime_patch_reference",
+      "home": "https://github.com/ZeoVan/MSR_20_Code_vulnerability_CSV_Dataset",
+      "languages": [
+        "python",
+        "javascript"
+      ],
+      "notes": "Primarily pattern provenance / patch exemplars; target-language mismatch is documented."
+    },
+    {
+      "dataset_id": "vulrepair",
+      "role": "runtime_patch_reference",
+      "home": "https://github.com/awsm-research/VulRepair",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used for patch recipe phrasing and few-shot structures."
+    },
+    {
+      "dataset_id": "vulnpatchpairs",
+      "role": "runtime_patch_reference",
+      "home": "https://github.com/awsm-research/VulnPatchPairs",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used to seed before/after patch few-shots."
+    },
+    {
+      "dataset_id": "vul4j",
+      "role": "runtime_patch_reference",
+      "home": "https://github.com/tuhh-softsec/vul4j",
+      "languages": [
+        "java",
+        "python"
+      ],
+      "notes": "Human patch/PoV reference adapted into language-agnostic patch recipes."
+    },
+    {
+      "dataset_id": "owasp_benchmark",
+      "role": "scanner_eval",
+      "home": "https://owasp.org/www-project-benchmark/",
+      "languages": [
+        "python",
+        "javascript"
+      ],
+      "notes": "Bench provenance only; evaluator fixtures remain curated locally."
+    },
+    {
+      "dataset_id": "sard_juliet",
+      "role": "scanner_eval",
+      "home": "https://www.nist.gov/itl/ssd/software-quality-group/samate/software-assurance-reference-dataset-sard",
+      "languages": [
+        "python",
+        "javascript"
+      ],
+      "notes": "Bench provenance only; evaluator fixtures remain curated locally."
+    },
+    {
+      "dataset_id": "securityeval",
+      "role": "scanner_patch_ai_eval",
+      "home": "https://github.com/s2e-lab/SecurityEval",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Used for scanner/patch/AI benchmark provenance and local fixture seeding."
+    },
+    {
+      "dataset_id": "patcheval",
+      "role": "patch_eval",
+      "home": "https://github.com/bytedance/PatchEval",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "Patch evaluator provenance for local curated cases."
+    },
+    {
+      "dataset_id": "aicgseceval",
+      "role": "ai_code_eval",
+      "home": "https://github.com/Tencent/AICGSecEval",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "AI-code benchmark provenance for curated cases."
+    },
+    {
+      "dataset_id": "susvibes",
+      "role": "ai_code_eval",
+      "home": "https://openreview.net/forum?id=rs6rRCEixQ",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "AI-code benchmark provenance for curated cases."
+    },
+    {
+      "dataset_id": "securevibebench",
+      "role": "ai_code_eval",
+      "home": "https://github.com/securevibebench/securevibebench",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "AI-code benchmark provenance for curated cases."
+    },
+    {
+      "dataset_id": "seccodebench",
+      "role": "ai_code_eval",
+      "home": "https://github.com/eth-sri/SecCodeBench",
+      "languages": [
+        "python",
+        "javascript",
+        "typescript"
+      ],
+      "notes": "AI-code benchmark provenance for curated cases."
+    }
+  ]
+}

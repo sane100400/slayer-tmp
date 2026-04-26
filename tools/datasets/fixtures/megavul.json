@@ -1,0 +1,22 @@
+{
+  "records": [
+    {
+      "record_type": "scanner_pattern",
+      "language": "python",
+      "rule_id": "NO_DEBUG_MODE",
+      "regex": "app\\.run\\(.*debug\\s*=\\s*True",
+      "source_datasets": [
+        "megavul"
+      ]
+    },
+    {
+      "record_type": "scanner_pattern",
+      "language": "javascript",
+      "rule_id": "NO_WEAK_RANDOM",
+      "regex": "(token|session|reset).*Math\\.random",
+      "source_datasets": [
+        "megavul"
+      ]
+    }
+  ]
+}

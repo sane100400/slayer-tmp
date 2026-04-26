@@ -1,0 +1,12 @@
+{
+  "records": [
+    {
+      "record_type": "benchmark_case",
+      "rule_id": "SQL_PARAM_BINDING",
+      "language": "python",
+      "source_datasets": [
+        "owasp_benchmark"
+      ]
+    }
+  ]
+}

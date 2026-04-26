@@ -1,0 +1,44 @@
+{
+  "recipes": [
+    {
+      "rule_id": "NO_EXEC",
+      "language": "python",
+      "instructions": "쉘 문자열 실행을 제거하고 안전한 인수 리스트 또는 차단 동작으로 바꾸세요.",
+      "source_datasets": [
+        "cvefixes"
+      ]
+    },
+    {
+      "rule_id": "NO_EXEC",
+      "language": "javascript",
+      "instructions": "쉘 문자열 실행을 제거하고 안전한 인수 리스트 또는 차단 동작으로 바꾸세요.",
+      "source_datasets": [
+        "bigvul"
+      ]
+    },
+    {
+      "rule_id": "NO_DEBUG_MODE",
+      "language": "python",
+      "instructions": "하드코딩된 debug/DEBUG true를 환경 변수 기반 설정으로 바꾸세요.",
+      "source_datasets": [
+        "vul4j"
+      ]
+    },
+    {
+      "rule_id": "NO_NETWORK",
+      "language": "typescript",
+      "instructions": "사용자 입력 URL을 직접 호출하지 말고 차단하거나 허용 목록/고정 엔드포인트로 바꾸세요.",
+      "source_datasets": [
+        "vulnpatchpairs"
+      ]
+    },
+    {
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "language": "python",
+      "instructions": "환경 변수 조회로 바꾸고 실제 비밀값은 복원하지 마세요.",
+      "source_datasets": [
+        "vulrepair"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "examples": [
+    {
+      "example_id": "cvefixes-002",
+      "rule_id": "NO_EXEC",
+      "language": "python",
+      "before": "subprocess.run(f\"analyze {filename}\", shell=True, capture_output=True)",
+      "after": "subprocess.run([\"analyze\", filename], shell=False, capture_output=True)",
+      "source_datasets": [
+        "cvefixes"
+      ],
+      "notes": ""
+    },
+    {
+      "example_id": "bigvul-001",
+      "rule_id": "NO_EXEC",
+      "language": "javascript",
+      "before": "exec(`analyze ${filename}`)",
+      "after": "execFile(\"analyze\", [filename])",
+      "source_datasets": [
+        "bigvul"
+      ],
+      "notes": "Cross-language adaptation for runtime recipe provenance."
+    },
+    {
+      "example_id": "vul4j-001",
+      "rule_id": "NO_DEBUG_MODE",
+      "language": "python",
+      "before": "DEBUG = True",
+      "after": "DEBUG = os.environ.get(\"DEBUG\", \"false\").lower() == \"true\"",
+      "source_datasets": [
+        "vul4j"
+      ],
+      "notes": ""
+    },
+    {
+      "example_id": "vulnpatchpairs-001",
+      "rule_id": "NO_NETWORK",
+      "language": "typescript",
+      "before": "fetch(`${req.query.url}`)",
+      "after": "throw new Error(\"External user-supplied URLs are blocked\")",
+      "source_datasets": [
+        "vulnpatchpairs"
+      ],
+      "notes": ""
+    },
+    {
+      "example_id": "vulrepair-001",
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "language": "python",
+      "before": "API_KEY = \"sk-prod-abc123secretkey9999\"",
+      "after": "API_KEY = os.environ.get(\"API_KEY\", \"\")",
+      "source_datasets": [
+        "vulrepair"
+      ],
+      "notes": ""
+    }
+  ]
+}

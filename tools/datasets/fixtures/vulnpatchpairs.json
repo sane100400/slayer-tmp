@@ -1,0 +1,14 @@
+{
+  "records": [
+    {
+      "record_type": "patch_example",
+      "language": "typescript",
+      "rule_id": "NO_NETWORK",
+      "before": "fetch(`${req.query.url}`)",
+      "after": "throw new Error(\"External user-supplied URLs are blocked\")",
+      "source_datasets": [
+        "vulnpatchpairs"
+      ]
+    }
+  ]
+}

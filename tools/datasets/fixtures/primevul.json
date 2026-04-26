@@ -1,0 +1,17 @@
+{
+  "records": [
+    {
+      "record_type": "scanner_pattern",
+      "language": "python",
+      "rule_id": "NO_NETWORK",
+      "regex": "requests\\.(?:get|post)\\(.*(?:req\\.|request\\.|user_url|target_url)",
+      "context_keywords": [
+        "ssrf",
+        "proxy"
+      ],
+      "source_datasets": [
+        "primevul"
+      ]
+    }
+  ]
+}

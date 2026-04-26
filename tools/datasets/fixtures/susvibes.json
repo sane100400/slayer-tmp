@@ -1,0 +1,12 @@
+{
+  "records": [
+    {
+      "record_type": "benchmark_case",
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "language": "javascript",
+      "source_datasets": [
+        "susvibes"
+      ]
+    }
+  ]
+}

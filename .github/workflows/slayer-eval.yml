@@ -1,0 +1,27 @@
+name: SLAyer Artifact + Evaluator Gate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  slayer-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - name: Build runtime artifacts from bundled fixtures
+        run: |
+          python tools/datasets/fetch_dataset.py
+          python tools/datasets/normalize_dataset.py
+          python tools/build_runtime_artifacts.py --version v1
+      - name: Run tests
+        run: pytest -q
+      - name: Run evaluator gate
+        run: python tools/ci_gate.py --artifact-version v1

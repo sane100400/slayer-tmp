@@ -1,0 +1,13 @@
+{
+  "records": [
+    {
+      "record_type": "scanner_pattern",
+      "language": "javascript",
+      "rule_id": "NO_NETWORK",
+      "regex": "fetch\\(\\s*`.*\\$\\{(?:req|request|query)",
+      "source_datasets": [
+        "diversevul"
+      ]
+    }
+  ]
+}
