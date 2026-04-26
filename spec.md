@@ -9,7 +9,7 @@
 **바이브코딩으로 생성된 웹서비스 코드(Python · JS · TS)에서 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI(Claude Code / Codex / Gemini)로 자동 패치 후 배포 게이트를 여는 CLI 도구.**
 
 ```bash
-pip install slayer-sec   # 설치
+pip install -e ".[dev]"  # 설치
 slayer start .           # 스캔 → 위반 목록 출력
 slayer patch .           # 위반 자동 패치 → 🚀 Deployment Approved
 slayer model             # AI CLI 상태 확인 / 선호 모델 설정
@@ -443,7 +443,7 @@ Then:  vulnerable/ 전부 BLOCKED
 
 ```bash
 # 설치
-pip install slayer-sec
+pip install -e ".[dev]"
 
 # 스캔
 slayer start demo_vuln.py
@@ -470,7 +470,6 @@ slayer patch ./src --format json | jq '.deployable'
 ```bash
 pip install -e ".[dev]"     # 개발 설치
 python -m build             # 빌드
-pip install slayer-sec      # 사용자 설치
 ```
 
 **의존성**: `pydantic`, `typer`, `rich` — AI SDK 없음.

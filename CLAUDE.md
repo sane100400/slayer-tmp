@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 바이브코딩으로 생성된 **웹서비스 코드(Python · JS · TS)** 에서 **7종 보안 취약 패턴**을 탐지하고, 이미 설치된 **AI CLI(Claude Code / Codex / Gemini)** 로 자동 패치 후 배포 게이트를 여는 CLI 도구.
 
-`pip install slayer-sec` 한 줄로 설치. API 키 설정 없음. TUI 없음 — 순수 CLI.
+`pip install -e ".[dev]"` 로 개발 설치. API 키 설정 없음. TUI 없음 — 순수 CLI.
 
 **Specification**: `spec.md` (상세 명세)
 
