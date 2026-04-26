@@ -9,7 +9,7 @@ from rich.console import Console
 
 from slayer.ai_runner import AICliError, AI_CANDIDATES, _is_available, detect_ai_cli, AICliNotFoundError
 from slayer.patcher.llm_patcher import patch_path
-from slayer.reporter import render_json, render_patch_text, render_scan_text, print_scan_rich, print_patch_rich
+from slayer.reporter import render_json, print_scan_rich, print_patch_rich
 from slayer.scanner import scan_path
 
 app = typer.Typer(add_completion=False, help='SLAyer security scanner and patcher')

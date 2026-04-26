@@ -34,6 +34,6 @@ def generate_reset_token() -> str:
 
 def process_data(data):
     try:
-        return transform(data)
-    except:
+        return transform(data)  # noqa: F821 - intentionally vulnerable demo code
+    except:  # noqa: E722 - intentionally vulnerable demo code
         pass
