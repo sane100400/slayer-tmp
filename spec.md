@@ -46,7 +46,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | NO_HARDCODED_SECRETS | HARDCODED_SECRETS | **1,552** | API 키 하드코딩 |
 | NO_EXEC | COMMAND_INJECTION | **913** | shell=True |
 | NO_DEBUG_MODE | DEBUG_MODE_ON | 168 | debug=True 배포 |
-| NO_INSECURE_HASH | WEAK_HASH | 133 | MD5/SHA1 패스워드 |
+| NO_WEAK_RANDOM | WEAK_HASH | 133 | 보안 컨텍스트 약한 난수 (random/Math.random) |
 | NO_NETWORK | SSRF | 125 | 유저 입력 URL 기준 |
 | NO_BARE_EXCEPT | _(미탐지)_ | — | extract_vulns.py 스코프 외, SLAyer AST 독립 탐지 |
 
@@ -87,7 +87,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | SQL_PARAM_BINDING | 4.20 | 1,564 | 5.00 | **4.52** | ✓ |
 | NO_NETWORK | 3.70 | 125 | 3.28 | **3.53** | ✓ |
 | NO_DEBUG_MODE | 3.55 | 168 | 3.48 | **3.52** | ✓ |
-| NO_INSECURE_HASH | 3.55 | 133 | 3.32 | **3.46** | ✓ |
+| NO_WEAK_RANDOM | 3.55 | 133 | 3.32 | **3.46** | ✓ |
 | NO_BARE_EXCEPT | 3.00 | _(SLAyer 독립탐지)_ | 3.00† | **3.00** | ✓ |
 | INSECURE_DESERIALIZATION | 4.20 | 31 | 2.33 | 3.45 | — AST 탐지 미구현 (v2 후보) |
 | CORS_WILDCARD | 2.95 | 167 | 3.48 | 3.16 | — FP 높음 |
@@ -128,7 +128,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | V-03 | NO_EXEC | critical | 48.3% 레포 |
 | V-04 | SQL_PARAM_BINDING | high | 56.7% 레포 |
 | V-05 | NO_DEBUG_MODE | high | 10.2% 레포 |
-| V-06 | NO_INSECURE_HASH | high | 8.7% 레포 |
+| V-06 | NO_WEAK_RANDOM | high | 8.7% 레포 |
 | V-07 | NO_BARE_EXCEPT | medium | 42.1% 레포 |
 
 ### 패치 전략 (언어별, 실제 동작하는 코드로 교체)
@@ -140,7 +140,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | NO_EXEC | `shell=False` + 리스트 인수 | `execFile("cmd", [arg], cb)` |
 | SQL_PARAM_BINDING | `cursor.execute("... WHERE x=?", (val,))` | `query("... WHERE x=$1", [val])` |
 | NO_DEBUG_MODE | `os.environ.get("DEBUG","false")=="true"` | `process.env.NODE_ENV!=="production"` |
-| NO_INSECURE_HASH | `hashlib.pbkdf2_hmac("sha256", ...)` | `crypto.createHash("sha256")` |
+| NO_WEAK_RANDOM | `secrets.token_hex(32)` | `crypto.randomUUID()` |
 | NO_BARE_EXCEPT | `except Exception as e: logger.warning(e)` | `catch(e){console.error(e)}` |
 
 ---
@@ -297,7 +297,7 @@ Deployment BLOCKED
 ```python
 RuleType = Literal["NO_NETWORK","NO_EXEC","NO_HARDCODED_SECRETS",
                    "SQL_PARAM_BINDING","NO_DEBUG_MODE",
-                   "NO_INSECURE_HASH","NO_BARE_EXCEPT","CUSTOM"]
+                   "NO_WEAK_RANDOM","NO_BARE_EXCEPT","CUSTOM"]
 Severity = Literal["critical","high","medium"]
 
 class SLARule(BaseModel):
@@ -345,7 +345,7 @@ AI 없이 결정적으로 동작.
 - **NO_HARDCODED_SECRETS**: password/api_key/secret/token 할당, sk-/ghp_ 패턴
 - **SQL_PARAM_BINDING**: f-string + SQL 키워드 (SELECT/INSERT/UPDATE/DELETE/DROP)
 - **NO_DEBUG_MODE**: `DEBUG=True`, `app.run(debug=True)`
-- **NO_INSECURE_HASH**: `hashlib.md5()`, `hashlib.sha1()` 호출
+- **NO_WEAK_RANDOM**: `random.random()`, `random.choice()` 보안 컨텍스트 사용
 - **NO_BARE_EXCEPT**: `except: pass` / `except Exception: pass`
 
 ### `js_analyzer.py` — JS/TS Regex 기반
@@ -355,7 +355,7 @@ AI 없이 결정적으로 동작.
 - **NO_HARDCODED_SECRETS**: const/let/var 시크릿 할당, ghp_/sk- 패턴
 - **SQL_PARAM_BINDING**: 템플릿 리터럴 + SQL 키워드
 - **NO_DEBUG_MODE**: `debug: true`, `DEBUG = true`
-- **NO_INSECURE_HASH**: `createHash('md5')`, `createHash('sha1')`
+- **NO_WEAK_RANDOM**: `Math.random()` 보안 컨텍스트 사용
 - **NO_BARE_EXCEPT**: `catch(e) {}` (빈 catch 블록)
 
 ---

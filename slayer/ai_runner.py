@@ -158,8 +158,9 @@ def run_ai(
 
         if result.returncode != 0:
             stderr = (result.stderr or "").strip()
+            suffix = ("\n" + stderr) if stderr else ""
             raise AICliExecutionError(
-                f"{selected.name} exited with error (exit={result.returncode}).{('\n' + stderr) if stderr else ''}"
+                f"{selected.name} exited with error (exit={result.returncode}).{suffix}"
             )
 
         output = result.stdout

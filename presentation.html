@@ -814,7 +814,7 @@ code.inline{
         </div>
         <div class="sb-row">
           <div class="sb-dot fail"></div>
-          <span class="sb-rule">NO_INSECURE_HASH · NO_BARE_EXCEPT</span>
+          <span class="sb-rule">NO_WEAK_RANDOM · NO_BARE_EXCEPT</span>
           <span class="sb-loc">+2</span>
           <span class="sb-st f">FAIL</span>
         </div>
@@ -963,7 +963,7 @@ code.inline{
         <tr><td style="font-family:var(--mono);color:var(--R2)">V-03</td><td class="cwe-id">NO_EXEC</td><td>쉘 명령어 실행 / Command Injection</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">48.3% 레포</td><td style="font-family:var(--mono);color:var(--amber)">913건</td></tr>
         <tr><td style="font-family:var(--mono);color:var(--R2)">V-04</td><td class="cwe-id">SQL_PARAM_BINDING</td><td>SQL 문자열 직접 삽입</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">56.7% 레포</td><td style="font-family:var(--mono);color:var(--amber)">1,564건</td></tr>
         <tr><td style="font-family:var(--mono);color:var(--R2)">V-05</td><td class="cwe-id">NO_DEBUG_MODE</td><td>디버그 모드 배포</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">10.2% 레포</td><td style="font-family:var(--mono);color:var(--amber)">168건</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">V-06</td><td class="cwe-id">NO_INSECURE_HASH</td><td>MD5/SHA1 취약 해시</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">8.7% 레포</td><td style="font-family:var(--mono);color:var(--amber)">133건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-06</td><td class="cwe-id">NO_WEAK_RANDOM</td><td>예측 가능한 난수 (CWE-330)</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">8.7% 레포</td><td style="font-family:var(--mono);color:var(--amber)">133건</td></tr>
         <tr><td style="font-family:var(--mono);color:var(--R2)">V-07</td><td class="cwe-id">NO_BARE_EXCEPT</td><td>에러 침묵 처리</td><td><span class="badge badge-med">Medium</span></td><td style="font-family:var(--mono);color:var(--R2)">42.1% 레포</td><td style="font-family:var(--mono);color:var(--amber)">독립 AST 탐지</td></tr>
       </tbody>
     </table>
@@ -1121,12 +1121,12 @@ code.inline{
         <div class="vuln-freq">10.2% 레포 · 점수 3.52</div>
       </div>
 
-      <!-- 6 NO_INSECURE_HASH -->
+      <!-- 6 NO_WEAK_RANDOM -->
       <div class="vuln-card">
         <div class="vuln-rank">6</div>
-        <div class="vuln-cwe">High · 133건</div>
-        <div class="vuln-name">MD5/SHA1 취약 해시</div>
-        <div class="vuln-rule">NO_INSECURE_HASH</div>
+        <div class="vuln-cwe">High · CWE-330</div>
+        <div class="vuln-name">예측 가능한 난수</div>
+        <div class="vuln-rule">NO_WEAK_RANDOM</div>
         <div class="vuln-bar"><div class="vuln-bar-fill" style="width:69%"></div></div>
         <div class="vuln-freq">8.7% 레포 · 점수 3.46</div>
       </div>
@@ -1161,9 +1161,9 @@ code.inline{
         <div class="ds-source">빈도 × 중요도 매트릭스 선정</div>
       </div>
       <div class="ds-stat">
-        <div class="ds-stat-num">3</div>
+        <div class="ds-stat-num">4</div>
         <div class="ds-stat-label">벤치마크 세트</div>
-        <div class="ds-source">vulnerable · fixed · false_positive</div>
+        <div class="ds-source">vulnerable · fixed · false_positive · blind_spot</div>
       </div>
     </div>
 
@@ -1232,7 +1232,7 @@ code.inline{
         <div class="code-body2">
           <div><span class="ln2">5</span><span class="c-safe">API_KEY</span><span class="c-gray"> = os.environ.</span><span class="c-safe">get</span><span class="c-gray">(</span><span class="c-str">"API_KEY"</span><span class="c-gray">, </span><span class="c-str">""</span><span class="c-gray">)</span></div>
           <div><span class="ln2">12</span><span class="c-safe">DEBUG</span><span class="c-gray"> = os.environ.</span><span class="c-safe">get</span><span class="c-gray">(</span><span class="c-str">"DEBUG"</span><span class="c-gray">, </span><span class="c-str">"false"</span><span class="c-gray">) == </span><span class="c-str">"true"</span></div>
-          <div><span class="ln2">16</span><span class="c-cmt"># SLA: 외부 호출 → NotImplementedError</span></div>
+          <div><span class="ln2">16</span><span class="c-gray">if </span><span class="c-safe">url</span><span class="c-gray"> not in </span><span class="c-safe">ALLOWED_DOMAINS</span><span class="c-gray">: raise ValueError</span></div>
           <div><span class="ln2">22</span><span class="c-gray">cursor.</span><span class="c-call">execute</span><span class="c-gray">(</span><span class="c-safe">"SELECT * WHERE name=?"</span><span class="c-gray">, (q,))</span></div>
           <div><span class="ln2">27</span><span class="c-gray">subprocess.</span><span class="c-call">run</span><span class="c-gray">([</span><span class="c-str">"analyze"</span><span class="c-gray">, f], </span><span class="c-safe">shell=False</span><span class="c-gray">)</span></div>
         </div>
@@ -1247,7 +1247,7 @@ code.inline{
     <div class="stat-grid" style="margin-top:0">
       <div class="stat-card">
         <div class="stat-num" style="color:var(--G2)">0</div>
-        <div class="stat-label">SLAyer 자체 설정<br>API 키 · config · 로그인</div>
+        <div class="stat-label">API 키 · 로그인<br>기본 설정 없이 실행</div>
       </div>
       <div class="stat-card">
         <div class="stat-num">3</div>
@@ -1266,7 +1266,7 @@ code.inline{
 
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
       <p style="font-size:13px;color:var(--T2)">
-        Claude Code / Codex CLI / Gemini CLI 중 하나가 이미 설치된 환경. 바이브코더라면 이미 있다. <strong style="color:var(--T)">SLAyer는 추가 인증 없음.</strong>
+        Claude Code / Codex CLI / Gemini CLI 중 하나가 이미 설치된 환경을 전제합니다. <strong style="color:var(--T)">SLAyer는 추가 인증 없음.</strong>
       </p>
       <div style="font-family:var(--mono);font-size:11px;color:var(--T3);text-align:right;line-height:1.7">
         <div style="color:var(--T2)">github.com/sane100400/SLAyer</div>
