@@ -1035,122 +1035,110 @@ code.inline{
 </section>
 
 <!-- ══════════════════════════════════════════════════
-     S4  PROOF + CLOSE
+     S4  TECHNICAL DEPTH + CLOSE
 ══════════════════════════════════════════════════ -->
 <section class="slide" id="s4">
-  <div class="slide-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
+  <div class="slide-inner" style="display:grid;grid-template-columns:3fr 2fr;gap:40px;align-items:start">
 
-    <!-- LEFT: benchmark results -->
+    <!-- LEFT: technical architecture pipeline -->
     <div>
-      <div class="overline">04 — Proof</div>
-      <h2 class="section-title">
-        실제로<br>
-        <em>작동합니다.</em>
+      <div class="overline">04 — Under the Hood</div>
+      <h2 class="section-title" style="margin-bottom:14px">
+        Bandit 래퍼가<br>
+        <em>아닙니다.</em>
       </h2>
 
-      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--T3);margin-bottom:8px">
-        slayer-bench-v0 — 핸드 큐레이션 벤치마크
-      </div>
-      <div style="border:1px solid var(--line);margin-bottom:16px">
-        <table class="bench-table">
-          <thead>
-            <tr><th>지표</th><th>값</th><th style="color:var(--T4)">설명</th></tr>
-          </thead>
-          <tbody>
-            <tr><td style="color:var(--T2)">True Positive</td><td><span class="bench-val">22</span></td><td style="color:var(--T3);font-family:var(--mono);font-size:11px">취약 파일 — 정확히 검출</td></tr>
-            <tr><td style="color:var(--T2)">False Positive</td><td><span class="bench-val">0</span></td><td style="color:var(--T3);font-family:var(--mono);font-size:11px">정상 파일 오탐 없음</td></tr>
-            <tr><td style="color:var(--T2)">True Negative</td><td><span class="bench-val">6</span></td><td style="color:var(--T3);font-family:var(--mono);font-size:11px">정상 파일 — 통과</td></tr>
-            <tr><td style="color:var(--T2)">False Negative</td><td><span class="bench-val">0</span></td><td style="color:var(--T3);font-family:var(--mono);font-size:11px">미탐 없음</td></tr>
-            <tr style="background:var(--Gfog)">
-              <td style="color:var(--T);font-weight:700">Precision / Recall / F1</td>
-              <td colspan="2"><span class="bench-val" style="font-size:20px">1.000 / 1.000 / 1.000</span></td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Pipeline steps -->
+      <div style="display:flex;flex-direction:column;gap:1px">
+
+        <div style="display:grid;grid-template-columns:80px 1fr;border:1px solid var(--line);overflow:hidden">
+          <div style="background:var(--Rfog);border-right:1px solid var(--Rrim);padding:12px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <div style="font-family:var(--display);font-size:18px;font-weight:800;color:var(--R2)">①</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--T3);letter-spacing:.1em;text-transform:uppercase;text-align:center">Data<br>Pipeline</div>
+          </div>
+          <div style="padding:10px 14px;background:var(--bg1)">
+            <div style="font-size:13px;font-weight:600;color:var(--T);margin-bottom:3px">GitHub CLAUDE.md 레포 직접 수집 · AST 빈도 분석</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--T3)">중요도 5축(공격 가능성·피해도·TTE·탐지신뢰도·AI증폭) × 0.6 + log(빈도) × 0.4 → 상위 7종 확정</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:80px 1fr;border:1px solid var(--line);overflow:hidden">
+          <div style="background:var(--Rfog);border-right:1px solid var(--Rrim);padding:12px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <div style="font-family:var(--display);font-size:18px;font-weight:800;color:var(--R2)">②</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--T3);letter-spacing:.1em;text-transform:uppercase;text-align:center">Deterministic<br>Detection</div>
+          </div>
+          <div style="padding:10px 14px;background:var(--bg1)">
+            <div style="font-size:13px;font-weight:600;color:var(--T);margin-bottom:3px">Python: <code class="inline">ast</code> 모듈 완전 파싱 — AST node 순회 (AI 없음, 100% 결정적)</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--T3)">JS/TS: 컨텍스트 인식 regex — SSRF는 URL 인자만, NO_EXEC는 객체 메서드 제외 (db.exec FP 방어)</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:80px 1fr;border:1px solid var(--line);overflow:hidden">
+          <div style="background:var(--Rfog);border-right:1px solid var(--Rrim);padding:12px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <div style="font-family:var(--display);font-size:18px;font-weight:800;color:var(--R2)">③</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--T3);letter-spacing:.1em;text-transform:uppercase;text-align:center">AI CLI<br>Delegation</div>
+          </div>
+          <div style="padding:10px 14px;background:var(--bg1)">
+            <div style="font-size:13px;font-weight:600;color:var(--T);margin-bottom:3px">anthropic SDK 없음 — 로컬 설치된 claude/codex/gemini subprocess 위임</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--T3)">AI 응답에서 코드블록 추출 · 시크릿 마스킹 후 프롬프트 전송 (유출 방지)</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:80px 1fr;border:1px solid var(--line);overflow:hidden">
+          <div style="background:var(--Rfog);border-right:1px solid var(--Rrim);padding:12px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+            <div style="font-family:var(--display);font-size:18px;font-weight:800;color:var(--R2)">④</div>
+            <div style="font-family:var(--mono);font-size:9px;color:var(--T3);letter-spacing:.1em;text-transform:uppercase;text-align:center">Patch<br>Quality</div>
+          </div>
+          <div style="padding:10px 14px;background:var(--bg1)">
+            <div style="font-size:13px;font-weight:600;color:var(--T);margin-bottom:3px"><code class="inline">ast.parse</code> / <code class="inline">node --check</code> / <code class="inline">tsc --noEmit</code> 구문 검증</div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--T3)">검증 실패 시 원본 복원 · symlink 경계 이탈 방어 · 패치 후 재스캔으로 효과 확인</div>
+          </div>
+        </div>
+
       </div>
 
-      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--T3);margin-bottom:8px">
-        ai-bench-v1 — Claude Haiku 실제 생성 코드 독립 검증
-      </div>
-      <div style="border:1px solid var(--line);padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--R2);line-height:1">15</div>
-          <div style="font-size:13px;color:var(--T2)">취약점 탐지</div>
-          <div style="font-family:var(--mono);font-size:10px;color:var(--T3);margin-top:4px">4개 AI 생성 파일 스캔</div>
-        </div>
-        <div style="font-size:12px;color:var(--T2);line-height:1.7">
-          SQL_PARAM_BINDING (5)<br>
-          NO_BARE_EXCEPT (3)<br>
-          NO_DEBUG_MODE (3)<br>
-          NO_WEAK_RANDOM (2)<br>
-          <span style="color:var(--T3)">NO_HARDCODED_SECRETS + NO_EXEC (2)</span>
-        </div>
+      <!-- Key differentiator callout -->
+      <div style="margin-top:10px;padding:10px 14px;background:var(--bg2);border-left:2px solid var(--R);display:flex;align-items:baseline;gap:10px">
+        <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--T3);flex-shrink:0">핵심 차이</span>
+        <span style="font-size:13px;color:var(--T2)">Bandit·Semgrep은 <em style="font-style:normal;color:var(--T)">일반 개발자</em> 코드 기준. SLAyer는 <em style="font-style:normal;color:var(--R2)">AI가 실제로 짜는 패턴</em>을 데이터로 찾아 룰셋 구성.</span>
       </div>
     </div>
 
-    <!-- RIGHT: comparison + CTA -->
+    <!-- RIGHT: real-world + CTA -->
     <div>
-      <div class="overline">기존 도구와 비교</div>
+      <div class="overline">실 코드 검증</div>
 
-      <div style="border:1px solid var(--line);margin-bottom:24px">
-        <table class="compare-table">
-          <thead>
-            <tr>
-              <th>항목</th>
-              <th style="color:var(--G2)">SLAyer</th>
-              <th>Bandit</th>
-              <th>Semgrep</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style="color:var(--T2)">대상</td>
-              <td class="slayer-col">AI 생성 코드 특화</td>
-              <td class="other-col">Python 일반</td>
-              <td class="other-col">범용</td>
-            </tr>
-            <tr>
-              <td style="color:var(--T2)">언어</td>
-              <td class="slayer-col">Python · JS · TS</td>
-              <td class="other-col">Python</td>
-              <td class="other-col">다수</td>
-            </tr>
-            <tr>
-              <td style="color:var(--T2)">자동 패치</td>
-              <td><span class="chk">✓ AI CLI</span></td>
-              <td><span class="x">✗</span></td>
-              <td><span class="x">✗</span></td>
-            </tr>
-            <tr>
-              <td style="color:var(--T2)">설정</td>
-              <td class="slayer-col">제로 설정</td>
-              <td class="other-col">필요</td>
-              <td class="other-col">rule file 필요</td>
-            </tr>
-            <tr>
-              <td style="color:var(--T2)">API 키</td>
-              <td><span class="chk">✓ 불필요</span></td>
-              <td><span class="chk">✓</span></td>
-              <td class="other-col">계획별</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- ai-bench-v1 -->
+      <div style="border:1px solid var(--line);padding:14px 16px;margin-bottom:14px">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--T3);margin-bottom:10px">Claude Haiku 생성 코드 4개 파일 독립 스캔</div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:center">
+          <div style="font-family:var(--display);font-size:32px;font-weight:800;color:var(--R2);line-height:1">15</div>
+          <div style="font-size:13px;color:var(--T2)">취약점 탐지<br><span style="font-family:var(--mono);font-size:10px;color:var(--T3)">user-auth · data-pipeline · rest-api · webhook</span></div>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">
+          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border:1px solid var(--Rrim);color:var(--R2)">SQL×5</span>
+          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border:1px solid var(--line);color:var(--T3)">EXCEPT×3</span>
+          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border:1px solid var(--line);color:var(--T3)">DEBUG×3</span>
+          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border:1px solid var(--line);color:var(--T3)">RANDOM×2</span>
+          <span style="font-family:var(--mono);font-size:10px;padding:2px 8px;border:1px solid var(--line);color:var(--T3)">SECRET+EXEC×2</span>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--T3);font-style:italic">훈련 데이터와 독립된 실제 AI 생성 코드에서도 패턴 확인</div>
       </div>
 
       <!-- CTA -->
-      <div style="border:1px solid var(--Grim);background:var(--Gfog);padding:20px 24px;margin-bottom:16px">
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--G2);margin-bottom:12px">Try it now</div>
-        <div style="font-family:var(--mono);font-size:13px;color:var(--T2);line-height:2">
+      <div style="border:1px solid var(--Grim);background:var(--Gfog);padding:16px 20px;margin-bottom:14px">
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--G2);margin-bottom:10px">Try it now</div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--T2);line-height:2.1">
           <div>$ pip install -e ".[dev]"</div>
           <div>$ slayer start <span style="color:var(--T3)">&lt;your_project&gt;</span></div>
           <div>$ slayer patch <span style="color:var(--T3)">&lt;your_project&gt;</span></div>
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div style="font-family:var(--mono);font-size:12px;color:var(--T2);line-height:1.8">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--T2);line-height:1.9">
           <div style="color:var(--T)">github.com/sane100400/SLAyer</div>
-          <div style="color:var(--T3)">Axii · br0nzu · sane · discord.gg/gXFrGUAZHy</div>
+          <div style="color:var(--T3)">Axii · br0nzu · sane</div>
         </div>
         <div style="font-family:var(--mono);font-size:10px;color:var(--R2);text-align:right;line-height:1.7">
           CMUX × AIM 2026<br>Developer Tooling
