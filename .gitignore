@@ -28,6 +28,7 @@ dataset/
 # RAG index (generated from dataset)
 tools/.chroma_index/
 tools/pattern_report.json
+tools/*_pattern_report.json
 
 # Editor directories and files
 .vscode/*

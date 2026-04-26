@@ -23,7 +23,41 @@ slayer patch .           # 위반 자동 패치 → 🚀 Deployment Approved
 
 ---
 
-## 0.5 Vibe Coding Vulnerability Taxonomy
+## 0.5 Dataset Strategy
+
+두 종류의 데이터셋을 목적에 따라 분리하여 사용한다.
+
+### HuggingFace 데이터셋 — 7종 CWE 도출 근거
+
+| 데이터셋 | 샘플 수 | 용도 |
+|---------|--------|------|
+| `code-search-net/code_search_net` (Python) | 30,000+ 함수 | 일반 Python 코드 베이스라인 |
+| `HuggingFaceH4/CodeAlpaca_20K` | 20,000 샘플 | AI 생성 코드 패턴 |
+
+AST 기반 패턴 분석으로 각 CWE 후보의 **관측 빈도**를 계산하고, 그 빈도가 높은 상위 7종을 SLAyer 룰셋으로 확정한다. 데이터에서 관측되지 않은 CWE는 포함하지 않는다.
+
+분석 스크립트: `tools/analyze_hf_dataset.py`
+결과 리포트: `tools/hf_pattern_report.json`, `tools/codealp_pattern_report.json`
+
+### GitHub 수집 바이브코딩 파일 — 성능 평가 벤치마크
+
+`CLAUDE.md` 파일 보유 레포 = Claude Code로 빌드된 직접 증거.
+
+| 구성 | 내용 |
+|------|------|
+| 수집 방법 | GitHub Code Search API (`filename:CLAUDE.md + flask/fastapi/django`) |
+| 저장 위치 | `dataset/` (gitignore, 배포 미포함) |
+| 용도 | SLAyer 7종 룰의 **탐지 정확도(recall) 측정** |
+| 목표 | 210개 이상 실제 바이브코딩 Python 파일 |
+
+수집 스크립트: `tools/collect_dataset.py`
+벤치마크 실행: `tools/benchmark.py` (추후 구현)
+
+> **원칙**: 7종 CWE는 HF 데이터에서 통계적으로 도출. GitHub 파일은 구현 후 SLAyer가 얼마나 잘 잡는지 검증하는 데 사용.
+
+---
+
+## 0.6 Vibe Coding Vulnerability Taxonomy
 
 AI 코드 생성 도구로 작성된 Python 코드에서 **반복적으로 등장하는 보안 취약 패턴** 7종.
 
@@ -45,7 +79,7 @@ AI 코드 생성 도구로 작성된 Python 코드에서 **반복적으로 등�
 | V-03 | NO_EXEC | 쉘 실행 함수 + `shell=True` | critical | "편하게 동작하게" 프롬프트 |
 | V-04 | SQL_PARAM_BINDING | f-string/포맷 + SQL 키워드 | high | 오래된 튜토리얼 패턴 |
 | V-05 | NO_DEBUG_MODE | `DEBUG=True`, `debug=True`, `app.run(debug=True)` | high | 개발 예제 그대로 배포 |
-| V-06 | NO_INSECURE_HASH | `hashlib.md5/sha1` + 패스워드 컨텍스트 | high | 구식 튜토리얼 |
+| V-06 | NO_WEAK_RANDOM | `random.random/randint/choice` in security context | high | 보안 컨텍스트에 비암호학적 난수 사용 |
 | V-07 | NO_BARE_EXCEPT | `except:` 또는 `except Exception: pass` | medium | "에러 없애줘" 프롬프트 |
 
 ### 패치 전략 (실제 동작하는 코드로 교체)
@@ -57,7 +91,7 @@ AI 코드 생성 도구로 작성된 Python 코드에서 **반복적으로 등�
 | NO_EXEC | `subprocess.run(cmd, shell=True)` | `subprocess.run(["cmd", arg], shell=False)` |
 | SQL_PARAM_BINDING | `f"SELECT ... '{x}'"` | `cursor.execute("SELECT ... ?", (x,))` |
 | NO_DEBUG_MODE | `DEBUG = True` | `os.environ.get("DEBUG","false").lower()=="true"` |
-| NO_INSECURE_HASH | `hashlib.md5(pwd)` | `hashlib.pbkdf2_hmac("sha256", ...)` |
+| NO_WEAK_RANDOM | `random.choice(token)` | `secrets.token_hex(32)` or `secrets.choice(...)` |
 | NO_BARE_EXCEPT | `except: pass` | `except Exception as e: logger.warning(e)` |
 
 ---
@@ -212,7 +246,7 @@ slayer patch <path>
 3. NO_HARDCODED_SECRETS — 하드코딩 API 키·패스워드
 4. SQL_PARAM_BINDING — SQL 직접 삽입
 5. NO_DEBUG_MODE — DEBUG=True
-6. NO_INSECURE_HASH — MD5/SHA1 패스워드 해싱
+6. NO_WEAK_RANDOM — 보안 컨텍스트에서 random 모듈 사용
 7. NO_BARE_EXCEPT — except: pass
 
 ---
@@ -335,8 +369,8 @@ $ slayer scan demo_vuln.py --ci
 
 ```python
 RuleType = Literal["NO_NETWORK","NO_EXEC","NO_HARDCODED_SECRETS",
-                   "SQL_PARAM_BINDING","NO_EVAL","NO_DEBUG_MODE",
-                   "NO_INSECURE_HASH","NO_BARE_EXCEPT","CUSTOM"]
+                   "SQL_PARAM_BINDING","NO_DEBUG_MODE",
+                   "NO_WEAK_RANDOM","NO_BARE_EXCEPT","CUSTOM"]
 Severity = Literal["critical","high","medium"]
 
 class SLARule(BaseModel):
@@ -407,8 +441,9 @@ DEBUG_PATTERNS = [
     r'app\.config\[.DEBUG.\]\s*=\s*True',
 ]
 
-# NO_INSECURE_HASH
-# hashlib.md5 / hashlib.sha1 + 같은 함수 내 password/passwd/pwd 변수명
+# NO_WEAK_RANDOM
+# random.random / random.randint / random.choice / random.shuffle
+# + 같은 함수 내 token/secret/password/key/auth 변수명 또는 함수명
 
 # NO_BARE_EXCEPT
 # ast.ExceptHandler.type is None
@@ -431,7 +466,7 @@ PARSE_PROMPT = """
   "name": "...",
   "description": "'~을 하면 ~이 됩니다' 형식 한국어",
   "raw_nl": "원본 입력",
-  "rule_type": "NO_NETWORK|NO_EXEC|NO_HARDCODED_SECRETS|SQL_PARAM_BINDING|NO_EVAL|NO_DEBUG_MODE|NO_INSECURE_HASH|NO_BARE_EXCEPT|CUSTOM",
+  "rule_type": "NO_NETWORK|NO_EXEC|NO_HARDCODED_SECRETS|SQL_PARAM_BINDING|NO_DEBUG_MODE|NO_WEAK_RANDOM|NO_BARE_EXCEPT|CUSTOM",
   "severity": "critical|high|medium"
 }
 
@@ -462,7 +497,7 @@ PATCH_PROMPT = """
 - NO_EXEC: shell=True → shell=False + 인수 리스트 변환
 - SQL_PARAM_BINDING: 파라미터 바인딩으로 교체
 - NO_DEBUG_MODE: os.environ.get("DEBUG","false").lower()=="true"로 교체
-- NO_INSECURE_HASH: hashlib.pbkdf2_hmac("sha256", ...) 또는 bcrypt
+- NO_WEAK_RANDOM: secrets.token_hex(32) 또는 secrets.choice(...)
 - NO_BARE_EXCEPT: except Exception as e: logger.warning(e)
 - 위반 없는 코드는 한 글자도 변경하지 말 것
 

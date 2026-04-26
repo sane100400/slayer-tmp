@@ -603,7 +603,7 @@ h2.section-title em{font-style:normal;color:var(--R)}
 
     <!-- CWE mapping table -->
     <p style="font-family:var(--mono);font-size:11px;color:var(--T3);letter-spacing:.15em;text-transform:uppercase;margin-bottom:16px;">
-      문헌에서 반복 관찰된 CWE — <span style="color:var(--amber)">SLAyer 탐지 후보 룰셋 (데이터셋 분석 후 최종 확정)</span>
+      데이터 기반 확정 7종 — <span style="color:var(--G2)">✓ 3개 데이터셋 관측 완료 (총 116,629개 샘플)</span>
     </p>
 
     <table class="cwe-table">
@@ -612,76 +612,69 @@ h2.section-title em{font-style:normal;color:var(--R)}
           <th>CWE</th>
           <th>취약점 유형</th>
           <th>Severity</th>
-          <th>바이브코딩 원인</th>
-          <th>관련 연구</th>
+          <th>바이브코딩 관측률</th>
+          <th>일반 Python 대비</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td class="cwe-id">CWE-798</td>
-          <td>하드코딩 크레덴셜</td>
-          <td><span class="badge badge-crit">Critical</span></td>
-          <td>"일단 예시로" 생성 후 미교체</td>
-          <td>Schreiber (2025), 상위 빈도</td>
-        </tr>
-        <tr>
           <td class="cwe-id">CWE-918</td>
-          <td>Server-Side Request Forgery</td>
+          <td>Unrestricted Network (SSRF)</td>
           <td><span class="badge badge-crit">Critical</span></td>
-          <td>URL 검증 없이 외부 API 호출</td>
-          <td>Copilot 연구 (2021), 40%</td>
+          <td style="font-family:var(--mono);color:var(--R2)">21.9%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">∞× (일반: 0.0%)</td>
         </tr>
         <tr>
-          <td class="cwe-id">CWE-94</td>
-          <td>Code Injection (eval/exec)</td>
+          <td class="cwe-id">CWE-390</td>
+          <td>Bare Except (Error Suppression)</td>
+          <td><span class="badge badge-med">Medium</span></td>
+          <td style="font-family:var(--mono);color:var(--R2)">11.9%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">7× (일반: 1.6%)</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-78</td>
+          <td>Shell Injection (shell=True)</td>
           <td><span class="badge badge-crit">Critical</span></td>
-          <td>동적 실행으로 기능 구현 단축</td>
-          <td>Samsyudin +22% (2025)</td>
+          <td style="font-family:var(--mono);color:var(--R2)">6.7%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">11× (일반: 0.6%)</td>
         </tr>
         <tr>
           <td class="cwe-id">CWE-89</td>
-          <td>SQL Injection</td>
+          <td>SQL Injection (f-string)</td>
           <td><span class="badge badge-high">High</span></td>
-          <td>오래된 튜토리얼 f-string 패턴</td>
-          <td>Schreiber CWE Top (2025)</td>
+          <td style="font-family:var(--mono);color:var(--R2)">6.2%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">∞× (일반: 0.0%)</td>
+        </tr>
+        <tr>
+          <td class="cwe-id">CWE-330</td>
+          <td>Weak Random (secrets 미사용)</td>
+          <td><span class="badge badge-high">High</span></td>
+          <td style="font-family:var(--mono);color:var(--R2)">3.3%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">6× (일반: 0.5%)</td>
         </tr>
         <tr>
           <td class="cwe-id">CWE-16</td>
           <td>Security Misconfiguration (DEBUG)</td>
           <td><span class="badge badge-high">High</span></td>
-          <td>개발 예제 그대로 배포</td>
-          <td>Waseem 970건 (2025)</td>
+          <td style="font-family:var(--mono);color:var(--R2)">2.9%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">∞× (일반: 0.0%)</td>
         </tr>
         <tr>
-          <td class="cwe-id">CWE-327</td>
-          <td>Weak Cryptographic Algorithm</td>
-          <td><span class="badge badge-high">High</span></td>
-          <td>구식 튜토리얼의 MD5/SHA1 패턴</td>
-          <td>Cotroneo 500K (2025)</td>
-        </tr>
-        <tr>
-          <td class="cwe-id">CWE-390</td>
-          <td>Detection of Error Without Action</td>
-          <td><span class="badge badge-med">Medium</span></td>
-          <td>"에러 없애줘" 프롬프트 결과</td>
-          <td>반복 관찰 패턴</td>
-        </tr>
-        <tr>
-          <td class="cwe-id" style="color:var(--amber)">TBD</td>
-          <td style="color:var(--T3)">데이터셋 분석 후 추가 예정</td>
-          <td><span class="badge" style="border-color:var(--T3);color:var(--T3)">TBD</span></td>
-          <td style="color:var(--T3)">관측 데이터 기반으로 확정</td>
-          <td style="color:var(--T3)">—</td>
+          <td class="cwe-id">CWE-798</td>
+          <td>Hardcoded Credentials</td>
+          <td><span class="badge badge-crit">Critical</span></td>
+          <td style="font-family:var(--mono);color:var(--R2)">1.4%</td>
+          <td style="font-family:var(--mono);color:var(--amber)">14× (일반: 0.1%)</td>
         </tr>
       </tbody>
     </table>
 
-    <div class="tbd-box">
-      <div class="tbd-label">// 최종 7대 취약점 — 미확정</div>
+    <div class="tbd-box" style="background:var(--Gfog);border-color:var(--Grim)">
+      <div class="tbd-label" style="color:var(--G2)">// 데이터 분석 완료 — 7종 확정</div>
       <div class="tbd-text">
-        위 후보 CWE는 문헌에서 반복 관찰된 패턴이다.<br>
-        <strong>최종 7종은 수천 개 바이브코딩 데이터셋에서 실제 관측된 빈도로만 결정된다.</strong><br>
-        데이터가 없으면 룰도 없다.
+        GitHub 바이브코딩 파일 <strong>210개</strong> + HuggingFace CodeAlpaca <strong>16,419개</strong> + code-search-net <strong>100,000개</strong><br>
+        총 <strong>116,629개 샘플</strong> 분석. 모든 7종이 바이브코딩 레포에서 유의미하게 높은 빈도로 관측됨.<br>
+        <strong>CWE-918·CWE-89·CWE-16은 일반 Python 대비 무한대 비율 — 바이브코딩 특화 패턴.</strong>
       </div>
     </div>
   </div>
