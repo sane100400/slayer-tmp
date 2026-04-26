@@ -17,13 +17,18 @@ PROVIDER_PATTERNS = (
 )
 PLACEHOLDER_WORDS = {"example", "dummy", "test", "changeme", "your_api_key", "xxxxx", "sample", "placeholder"}
 NETWORK_RE = re.compile(r'\b(fetch|axios\.(?:get|post|put|delete|patch)|http\.(?:get|request)|https\.(?:get|request))\s*\(')
-EXEC_RE = re.compile(r'\b(?:child_process\.)?(?:exec|execSync|spawnSync)\s*\(')
+EXEC_RE = re.compile(
+    r'(?:(?:child_process|cp)\.)?(?:exec|execSync|spawnSync)\s*\('
+    r'|require\([\"\']child_process[\"\']\)\.(?:exec|execSync|spawnSync)\s*\('
+    r'|(?<![\w$.])(?:exec|execSync|spawnSync)\s*\('
+)
 SQL_TEMPLATE_RE = re.compile(r'`[^`]*(SELECT|INSERT|UPDATE|DELETE|DROP)[^`]*\$\{', re.IGNORECASE)
 SQL_CONCAT_RE = re.compile(r'(?i)(SELECT|INSERT|UPDATE|DELETE|DROP).*(?:\+|concat\()')
-DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b')
-WEAK_RANDOM_RE = re.compile(r'Math\.random\s*\(')
+DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bdebug\s*=\s*true\b')
+INSECURE_HASH_RE = re.compile(r'createHash\(\s*[\"\'](?:md5|sha1)[\"\']\s*\)', re.IGNORECASE)
 EMPTY_CATCH_RE = re.compile(r'catch\s*\([^)]*\)\s*\{\s*\}', re.MULTILINE)
-SECURITY_CONTEXT_WORDS = ("token", "secret", "password", "session", "otp", "auth", "reset", "csrf")
+SECURITY_CONTEXT_WORDS = ("token", "secret", "password", "passwd", "pwd", "session", "otp", "auth", "reset", "csrf", "credential")
+SQL_CONTEXT_WORDS = ("sql", "query", "db.", "database", "execute")
 
 
 def _snippet(lines: list[str], lineno: int) -> str:
@@ -71,6 +76,17 @@ def _line_number(source: str, index: int) -> int:
     return source.count('\n', 0, index) + 1
 
 
+
+def _has_security_context(line: str) -> bool:
+    lowered = line.lower()
+    return any(word in lowered for word in SECURITY_CONTEXT_WORDS)
+
+
+def _has_sql_context(line: str) -> bool:
+    lowered = line.lower()
+    return any(word in lowered for word in SQL_CONTEXT_WORDS)
+
+
 def analyze(path: Path, source: str) -> list[Violation]:
     lines = source.splitlines()
     violations: list[Violation] = []
@@ -96,14 +112,14 @@ def analyze(path: Path, source: str) -> list[Violation]:
         if EXEC_RE.search(line):
             violations.append(_violation('NO_EXEC', path, lineno, lines))
 
-        if SQL_TEMPLATE_RE.search(line) or SQL_CONCAT_RE.search(line):
+        if (SQL_TEMPLATE_RE.search(line) or SQL_CONCAT_RE.search(line)) and _has_sql_context(line):
             violations.append(_violation('SQL_PARAM_BINDING', path, lineno, lines))
 
         if DEBUG_RE.search(line):
             violations.append(_violation('NO_DEBUG_MODE', path, lineno, lines))
 
-        if WEAK_RANDOM_RE.search(line) and any(word in line.lower() for word in SECURITY_CONTEXT_WORDS):
-            violations.append(_violation('NO_WEAK_RANDOM', path, lineno, lines))
+        if INSECURE_HASH_RE.search(line) and _has_security_context(line):
+            violations.append(_violation('NO_INSECURE_HASH', path, lineno, lines))
 
     for match in EMPTY_CATCH_RE.finditer(source):
         lineno = _line_number(source, match.start())
