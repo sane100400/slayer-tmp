@@ -27,9 +27,9 @@
   --amber:#d4910a;
   --amberfog:rgba(212,145,10,.10);
   --T:  #ede8e2;
-  --T2: #9a9088;
-  --T3: #524840;
-  --T4: #2c2420;
+  --T2: #c8c0b6;
+  --T3: #8a8278;
+  --T4: #504840;
   --f:  'Pretendard Variable','Pretendard',-apple-system,sans-serif;
   --mono:'IBM Plex Mono',monospace;
   --display:'Space Grotesk',sans-serif;
@@ -353,7 +353,7 @@ h2.section-title em{font-style:normal;color:var(--R)}
 .paper-card{
   background:var(--bg1);
   border:1px solid var(--line);
-  padding:14px;position:relative;overflow:hidden;
+  padding:10px 12px;position:relative;overflow:hidden;
 }
 .paper-card::before{
   content:'';position:absolute;
@@ -906,12 +906,6 @@ code.inline{
       <em>반복 취약 패턴</em>
     </h2>
 
-    <p class="lead">
-      2021~2026년 6편의 독립적 동료평가(peer-reviewed) 연구가 동일한 취약 패턴을 반복 관찰했다.
-      SLAyer의 탐지 룰셋은 이 연구들의 공통 CWE 관측값과 자체 수집 데이터셋을 기반으로
-      <strong>실증적으로 선별한 7종</strong>이다.
-    </p>
-
     <div class="paper-grid">
       <div class="paper-card">
         <div class="paper-year">2026 · Blain & Noiseux · arXiv:2604.05292</div>
@@ -951,11 +945,9 @@ code.inline{
       </div>
     </div>
 
-    <hr class="rule">
-
-    <p style="font-family:var(--mono);font-size:10px;color:var(--T3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px;">
-      Empirically-derived Ruleset (N=116,629) — <span style="color:var(--G2)">3개 데이터셋 교차 검증 완료</span>
-    </p>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--T3);letter-spacing:.18em;text-transform:uppercase;margin:10px 0 8px">
+      Empirically-derived Ruleset (N=116,629) — <span style="color:var(--G2)">3개 데이터셋 교차 검증</span>
+    </div>
 
     <table class="cwe-table">
       <thead>
@@ -1032,15 +1024,12 @@ code.inline{
       </div>
     </div>
 
-    <div class="quote-block">
-      <div class="quote-text">
-        "Existing tools such as Bandit and Semgrep target the <strong>general developer population</strong>.
-        There is a pressing need for tools calibrated to the <strong>systematic failure modes of generative AI</strong>."
-      </div>
-      <div class="quote-source">Waseem et al. (2025) — Vibe Coding in Practice · 연구팀 권고사항</div>
+    <div style="margin:16px 0;padding:14px 18px;border-left:3px solid var(--R);background:var(--Rfog)">
+      <div style="font-size:13px;color:var(--T);line-height:1.6">"Existing tools target the <strong>general developer population</strong>. There is a pressing need for tools calibrated to <strong>systematic failure modes of generative AI</strong>."</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--T3);margin-top:6px">Waseem et al. (2025) — Vibe Coding in Practice</div>
     </div>
 
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <span class="tag">bandit 대비: AI 특화 룰셋</span>
       <span class="tag">semgrep 대비: 설치 0줄</span>
       <span class="tag">sonarqube 대비: pip 한 줄</span>
@@ -1257,23 +1246,14 @@ code.inline{
       </div>
     </div>
 
-    <hr class="rule">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px">
-      <div>
-        <div class="overline" style="margin-bottom:8px">Prerequisites</div>
-        <p style="font-size:13px;color:var(--T2)">
-          Claude Code / Codex CLI / Gemini CLI 중 하나가 이미 설치된 환경.<br>
-          바이브코더라면 이미 있다. <strong>SLAyer는 추가 인증 없음.</strong>
-        </p>
-      </div>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--T3);text-align:right;line-height:1.8">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+      <p style="font-size:13px;color:var(--T2)">
+        Claude Code / Codex CLI / Gemini CLI 중 하나가 이미 설치된 환경. 바이브코더라면 이미 있다. <strong style="color:var(--T)">SLAyer는 추가 인증 없음.</strong>
+      </p>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--T3);text-align:right;line-height:1.7">
         <div style="color:var(--T2)">github.com/sane100400/SLAyer</div>
-        <div>CMUX × AIM · 2026-04-26</div>
-        <div style="color:var(--R2);margin-top:4px">Developer Tooling Track</div>
-        <div style="margin-top:8px;letter-spacing:.1em;font-size:10px">Axii · br0nzu · sane</div>
-        <div style="color:var(--T3);font-size:9px;letter-spacing:.06em">discord.gg/gXFrGUAZHy</div>
-        <div style="margin-top:12px;font-size:12px;color:var(--T2);letter-spacing:.06em"><span style="color:var(--T)">SL</span><span style="color:var(--R);font-weight:300">/</span><span style="color:var(--T)">yer</span> — Vibe. Scan. Purify. Deploy.</div>
+        <div>Axii · br0nzu · sane · discord.gg/gXFrGUAZHy</div>
+        <div style="color:var(--R2)">CMUX × AIM 2026 — Developer Tooling</div>
       </div>
     </div>
   </div>
