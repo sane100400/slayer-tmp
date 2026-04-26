@@ -9,13 +9,17 @@
 **바이브코딩으로 생성된 Python 코드에서 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI(Claude Code / Codex / Gemini)로 자동 패치 후 배포 게이트를 여는 TUI 도구.**
 
 ```bash
-pip install slayer-sec   # 설치 — 끝
-slayer start .           # 스캔 TUI 실행. API 키 설정 없음.
+pip install slayer-sec   # 설치
+slayer start .           # 스캔 TUI 실행
 slayer patch .           # 위반 자동 패치 → 🚀 Deployment Approved
 ```
 
-**타겟 사용자**: 이미 Claude Code / Codex / Gemini CLI 중 하나가 설치된 바이브코더.
-추가 설정 제로 — 쓰던 AI 그대로 보안 스캔+패치.
+**타겟 사용자**: Claude Code / Codex / Gemini CLI 중 하나가 이미 설치된 바이브코더.
+
+**"SLAyer 설정 제로"의 의미**:
+- SLAyer 자체에 API 키, config 파일, 로그인 없음
+- AI CLI(Claude Code 등)는 사용자가 이미 설치·인증한 상태를 전제
+- AI CLI 없으면 AST 스캔(탐지)은 동작, 패치만 불가 — 그 경우 설치 안내 표시
 
 ---
 
@@ -123,16 +127,31 @@ def detect_ai_cli() -> dict | None:
     """설치된 AI CLI 중 첫 번째 사용 가능한 것을 반환. 없으면 None."""
 
 def run_ai(prompt: str, timeout: int = 60) -> str:
-    """감지된 AI CLI에 프롬프트를 전달하고 stdout 반환. 실패 시 AICliNotFoundError."""
+    """감지된 AI CLI에 프롬프트를 전달하고 stdout 반환. 실패 시 AICliError."""
 ```
+
+### 실행 명령 포맷
+
+| AI CLI | 감지 명령 | 실행 명령 | 응답 |
+|--------|----------|----------|------|
+| `claude` | `claude --version` | `claude -p "{prompt}"` | stdout 전체 = 수정된 코드 |
+| `codex` | `codex --version` | `codex exec "{prompt}"` | stdout 전체 = 수정된 코드 |
+| `gemini` | `gemini --version` | `gemini "{prompt}"` | stdout 전체 = 수정된 코드 |
+
+**응답 파싱 규칙**:
+1. stdout 전체를 raw 문자열로 수신
+2. 코드 블록(` ```python ... ``` ` 또는 ` ``` ... ``` `)이 있으면 블록 내부만 추출
+3. 코드 블록 없으면 stdout 전체를 코드로 사용
+4. 결과가 `ast.parse()` 통과하면 파일에 기록, 실패하면 원본 복원
 
 ### 에러 처리
 
 | 상황 | 동작 |
 |------|------|
-| 아무 AI CLI도 없음 | `AICliNotFoundError` → TUI에 안내 메시지 |
-| CLI 실행 타임아웃 | `AICliTimeoutError` → 원본 파일 복원 |
-| exit code ≠ 0 | stderr를 에러 메시지로 표시 |
+| 아무 AI CLI도 없음 | `AICliNotFoundError` → TUI 안내 메시지 표시, AST 스캔은 계속 |
+| CLI exit code ≠ 0 | stderr 내용을 에러 메시지로 표시, 원본 파일 유지 |
+| stdout이 유효한 Python이 아님 | `ast.parse` 실패 → 원본 파일 복원, "Patch failed" 표시 |
+| 60초 타임아웃 | `AICliTimeoutError` → 원본 파일 복원 |
 
 **TUI 안내 메시지 (AI CLI 없을 때)**:
 ```
@@ -529,9 +548,25 @@ Then:  터미널에 패치 진행 상황 출력 ("Patching via {ai_name}...")
 ```
 Given: `slayer patch demo_vuln.py --format json`
 When:  명령어 완료
-Then:  stdout이 파싱 가능한 JSON
-       스키마: { patched_files[], diffs{}, remaining_violations[], deployable, ai_used }
-       `| jq '.deployable'` → true 또는 false
+Then:  stdout이 파싱 가능한 JSON, 스키마:
+       {
+         "patched_files": ["<절대경로>"],
+         "diffs": { "<절대경로>": "<unified diff 문자열>" },
+         "remaining_violations": [
+           {
+             "rule_id": "rule_N",
+             "rule_name": "...",
+             "file": "<절대경로>",
+             "line": <int>,
+             "col": 0,
+             "code_snippet": "...",
+             "explanation": "..."
+           }
+         ],
+         "deployable": true | false,
+         "ai_used": "claude" | "codex" | "gemini"
+       }
+       `| jq '.deployable'` → true (violations 없으면)
 ```
 
 ### AC-10 — AI CLI 없는 환경
