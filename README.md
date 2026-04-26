@@ -1,9 +1,9 @@
 # SLAyer
 
-> **바이브코딩 웹서비스 전문 보안 스캐너**  
+> **바이브코딩 웹서비스 전문 보안 스캐너**
 > CMUX × AIM 해커톤 2026 · Developer Tooling 트랙
 
-바이브코딩(Claude / GPT / Cursor)으로 생성된 **웹서비스 코드(Python · JS · TS)** 에서  
+바이브코딩(Claude / GPT / Cursor)으로 생성된 **웹서비스 코드(Python · JS · TS)** 에서
 7가지 보안 취약 패턴을 탐지하고, 이미 설치된 AI CLI로 자동 패치 후 배포 게이트를 여는 도구.
 
 ```bash
@@ -19,7 +19,7 @@ slayer patch .    # 스캔 → 자동 패치 → 🚀 Deployment Approved
 
 ## Why SLAyer?
 
-bandit, semgrep 같은 기존 도구는 일반 보안 규칙을 쓴다.  
+bandit, semgrep 같은 기존 도구는 일반 보안 규칙을 쓴다.
 SLAyer는 **AI 생성 코드의 반복 취약 패턴**을 데이터 기반으로 탐지한다.
 
 | 원인 | 패턴 |
@@ -33,7 +33,7 @@ SLAyer는 **AI 생성 코드의 반복 취약 패턴**을 데이터 기반으로
 
 ## 왜 이 7가지인가?
 
-`CLAUDE.md` 보유 GitHub 레포 1,000개(607,369 파일)를 직접 수집·분석해 빈도를 측정하고,  
+`CLAUDE.md` 보유 GitHub 레포 1,000개(607,369 파일)를 직접 수집·분석해 빈도를 측정하고,
 **빈도 × 중요도 합산 매트릭스**로 최종 7종을 선별했다.
 
 ```

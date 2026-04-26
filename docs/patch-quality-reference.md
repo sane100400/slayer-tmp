@@ -103,6 +103,6 @@ Before marking the patch-quality work complete:
 
 1. `python -m pytest` passes.
 2. `npm run build` passes for the frontend/typecheck path.
-3. Modified documentation has no trailing whitespace and does not include `.cache` artifacts.
+3. Modified documentation has no trailing whitespace and does not include local cache artifacts.
 4. A focused test confirms `patch_explanations` is present in JSON/API output once the schema lands.
 5. A focused false-positive fixture confirms benign examples are not patched before AI invocation.
