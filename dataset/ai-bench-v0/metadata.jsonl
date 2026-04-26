@@ -1,0 +1,2 @@
+{"case_id": "AI-PY-SSRF", "dataset": "ai-bench-v0", "category": "vulnerable", "language": "python", "rule": "NO_NETWORK", "file": "cases/python/ai_ssrf.py", "expected_lines": [4], "expected_count": 1, "patchable": false, "source_datasets": ["AICGSecEval", "SusVibes", "SecurityEval"]}
+{"case_id": "AI-JS-EXEC", "dataset": "ai-bench-v0", "category": "vulnerable", "language": "javascript", "rule": "NO_EXEC", "file": "cases/javascript/ai_exec.js", "expected_lines": [1], "expected_count": 1, "patchable": false, "source_datasets": ["SecCodeBench", "SecureVibeBench"]}
