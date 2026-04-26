@@ -691,12 +691,15 @@ code.inline{
 /* ── PRINT / PDF EXPORT ── */
 @page{margin:0;size:1920px 1080px}
 @media print{
-  html,body{
-    width:1920px;
-    height:1080px;
+  html{
     scroll-snap-type:none;
     background-image:none;
-    overflow:hidden;
+  }
+  body{
+    width:1920px;
+    height:auto;
+    overflow:visible;
+    background-image:none;
   }
   .nav,.slide-num{display:none!important}
   .slide{
@@ -711,9 +714,13 @@ code.inline{
     display:flex;
     align-items:center;
   }
+  .slide:last-child{
+    page-break-after:avoid;
+    break-after:avoid;
+  }
   .slide-inner{
     transform:none!important;
-    max-height:1080px;
+    max-height:1024px;
     overflow:hidden;
   }
   .slide::before{
