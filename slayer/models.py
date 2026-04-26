@@ -68,9 +68,19 @@ class PatchExplanation(BaseModel):
 class PatchResult(BaseModel):
     patched_files: list[str] = Field(default_factory=list)
     diffs: dict[str, str] = Field(default_factory=dict)
+    patch_explanations: list[PatchExplanation] = Field(default_factory=list)
     remaining_violations: list[Violation] = Field(default_factory=list)
     deployable: bool = True
     ai_used: str = "none"
     scanned_files: list[str] = Field(default_factory=list)
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
-    patch_explanations: list[PatchExplanation] = Field(default_factory=list)
+
+
+class PatchExplanation(BaseModel):
+    file: str
+    rule_id: str
+    rule_name: str
+    line: int
+    title: str
+    summary: str
+    reference: str
