@@ -814,7 +814,7 @@ code.inline{
         </div>
         <div class="sb-row">
           <div class="sb-dot fail"></div>
-          <span class="sb-rule">NO_WEAK_RANDOM · NO_BARE_EXCEPT</span>
+          <span class="sb-rule">NO_INSECURE_HASH · NO_BARE_EXCEPT</span>
           <span class="sb-loc">+2</span>
           <span class="sb-st f">FAIL</span>
         </div>
@@ -947,24 +947,24 @@ code.inline{
     </div>
 
     <div style="font-family:var(--mono);font-size:9px;color:var(--T3);letter-spacing:.18em;text-transform:uppercase;margin:10px 0 8px">
-      Empirically-derived Ruleset (N=116,629) — <span style="color:var(--G2)">3개 데이터셋 교차 검증</span>
+      Empirically-derived Ruleset — <span style="color:var(--G2)">GitHub 바이브코딩 레포 3개 소스 합산</span>
     </div>
 
     <table class="cwe-table">
       <thead>
         <tr>
-          <th>#</th><th>CWE</th><th>취약점 유형</th><th>Severity</th>
-          <th>바이브코딩 관측률</th><th>일반 Python 대비</th>
+          <th>#</th><th>SLAyer Rule</th><th>취약점 유형</th><th>Severity</th>
+          <th>관측 빈도</th><th>근거</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">1</td><td class="cwe-id">CWE-918</td><td>Unrestricted Network (SSRF)</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">21.9%</td><td style="font-family:var(--mono);color:var(--amber)">∞×</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">2</td><td class="cwe-id">CWE-390</td><td>Bare Except (Error Suppression)</td><td><span class="badge badge-med">Medium</span></td><td style="font-family:var(--mono);color:var(--R2)">11.9%</td><td style="font-family:var(--mono);color:var(--amber)">7×</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">3</td><td class="cwe-id">CWE-78</td><td>Shell Injection (shell=True)</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">6.7%</td><td style="font-family:var(--mono);color:var(--amber)">11×</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">4</td><td class="cwe-id">CWE-89</td><td>SQL Injection (f-string)</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">6.2%</td><td style="font-family:var(--mono);color:var(--amber)">∞×</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">5</td><td class="cwe-id">CWE-330</td><td>Weak Random (secrets 미사용)</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">3.3%</td><td style="font-family:var(--mono);color:var(--amber)">6×</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">6</td><td class="cwe-id">CWE-16</td><td>Security Misconfiguration (DEBUG)</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">2.9%</td><td style="font-family:var(--mono);color:var(--amber)">∞×</td></tr>
-        <tr><td style="font-family:var(--mono);color:var(--R2)">7</td><td class="cwe-id">CWE-798</td><td>Hardcoded Credentials</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">1.4%</td><td style="font-family:var(--mono);color:var(--amber)">14×</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-01</td><td class="cwe-id">NO_HARDCODED_SECRETS</td><td>하드코딩 크레덴셜</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">33.9% 레포</td><td style="font-family:var(--mono);color:var(--amber)">1,552건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-02</td><td class="cwe-id">NO_NETWORK</td><td>유저 입력 기반 외부 호출 / SSRF</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">61.3% 레포</td><td style="font-family:var(--mono);color:var(--amber)">125건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-03</td><td class="cwe-id">NO_EXEC</td><td>쉘 명령어 실행 / Command Injection</td><td><span class="badge badge-crit">Critical</span></td><td style="font-family:var(--mono);color:var(--R2)">48.3% 레포</td><td style="font-family:var(--mono);color:var(--amber)">913건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-04</td><td class="cwe-id">SQL_PARAM_BINDING</td><td>SQL 문자열 직접 삽입</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">56.7% 레포</td><td style="font-family:var(--mono);color:var(--amber)">1,564건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-05</td><td class="cwe-id">NO_DEBUG_MODE</td><td>디버그 모드 배포</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">10.2% 레포</td><td style="font-family:var(--mono);color:var(--amber)">168건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-06</td><td class="cwe-id">NO_INSECURE_HASH</td><td>MD5/SHA1 취약 해시</td><td><span class="badge badge-high">High</span></td><td style="font-family:var(--mono);color:var(--R2)">8.7% 레포</td><td style="font-family:var(--mono);color:var(--amber)">133건</td></tr>
+        <tr><td style="font-family:var(--mono);color:var(--R2)">V-07</td><td class="cwe-id">NO_BARE_EXCEPT</td><td>에러 침묵 처리</td><td><span class="badge badge-med">Medium</span></td><td style="font-family:var(--mono);color:var(--R2)">42.1% 레포</td><td style="font-family:var(--mono);color:var(--amber)">독립 AST 탐지</td></tr>
       </tbody>
     </table>
   </div>
@@ -983,7 +983,7 @@ code.inline{
 
     <p class="lead">
       기존 보안 도구는 일반 개발자 코드를 기준으로 한다.
-      SLAyer는 <strong>바이브코더의 코드만</strong> 대상으로 GitHub 1,000개 레포를 직접 분석하고,
+      SLAyer는 <strong>바이브코더의 코드만</strong> 대상으로 GitHub 수집 레포를 직접 분석하고,
       <strong>빈도 × 중요도 합산 매트릭스</strong>로 7종을 선별한다.
     </p>
 
@@ -992,7 +992,7 @@ code.inline{
         <div class="method-n">STEP 01</div>
         <div class="method-title">데이터 수집</div>
         <div class="method-desc">
-          <code class="inline" style="font-size:10px">CLAUDE.md</code> 보유<br>GitHub 1,000 레포<br>607,369개 파일<br>Python + JS/TS
+          <code class="inline" style="font-size:10px">CLAUDE.md</code> / <code class="inline" style="font-size:10px">AGENTS.md</code><br>보유 레포 수집<br>AI CLI 생성 증거<br>Python + JS/TS
         </div>
       </div>
       <div class="method-step active">
@@ -1043,7 +1043,7 @@ code.inline{
         <div style="font-family:var(--mono);font-size:14px;color:var(--T);line-height:1.9">
           Score = <span style="color:var(--R2)">중요도합산</span> × 0.6 + <span style="color:var(--amber)">log(빈도)</span> / log(max) × 5 × 0.4
         </div>
-        <div style="font-size:12px;color:var(--T3);margin-top:6px">빈도 출처: GitHub 607,369파일 AST 분석 · 각 1–5점 척도</div>
+        <div style="font-size:12px;color:var(--T3);margin-top:6px">빈도 출처: dataset + drepos + repos 3개 소스 합산 · 각 1–5점 척도</div>
       </div>
     </div>
 
@@ -1066,79 +1066,79 @@ code.inline{
     <div class="lucky7-header">
       <div class="lucky7-eyebrow">Data-confirmed Vulnerability Ruleset</div>
       <span class="lucky7-num">7</span>
-      <div class="lucky7-title">바이브코딩 <em>7대 취약 패턴</em> — GitHub 12,224파일 분석 확정</div>
+      <div class="lucky7-title">바이브코딩 <em>7대 취약 패턴</em> — 4,927건 관측 기반 확정</div>
     </div>
 
     <div class="vuln-grid">
 
-      <!-- 1 NO_NETWORK / SSRF -->
+      <!-- 1 NO_HARDCODED_SECRETS -->
       <div class="vuln-card">
         <div class="vuln-rank">1</div>
-        <div class="vuln-cwe">CWE-918</div>
-        <div class="vuln-name">외부 네트워크 호출</div>
-        <div class="vuln-rule">NO_NETWORK</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:100%"></div></div>
-        <div class="vuln-freq">관측률 21.9%</div>
-      </div>
-
-      <!-- 2 NO_BARE_EXCEPT -->
-      <div class="vuln-card">
-        <div class="vuln-rank">2</div>
-        <div class="vuln-cwe">CWE-390</div>
-        <div class="vuln-name">에러 침묵 처리</div>
-        <div class="vuln-rule">NO_BARE_EXCEPT</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:54%"></div></div>
-        <div class="vuln-freq">관측률 11.9%</div>
-      </div>
-
-      <!-- 3 NO_EXEC -->
-      <div class="vuln-card">
-        <div class="vuln-rank">3</div>
-        <div class="vuln-cwe">CWE-78</div>
-        <div class="vuln-name">쉘 명령어 실행</div>
-        <div class="vuln-rule">NO_EXEC</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:30%"></div></div>
-        <div class="vuln-freq">관측률 6.7%</div>
-      </div>
-
-      <!-- 4 SQL_PARAM_BINDING -->
-      <div class="vuln-card">
-        <div class="vuln-rank">4</div>
-        <div class="vuln-cwe">CWE-89</div>
-        <div class="vuln-name">SQL 직접 삽입</div>
-        <div class="vuln-rule">SQL_PARAM_BINDING</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:28%"></div></div>
-        <div class="vuln-freq">관측률 6.2%</div>
-      </div>
-
-      <!-- 5 NO_WEAK_RANDOM -->
-      <div class="vuln-card">
-        <div class="vuln-rank">5</div>
-        <div class="vuln-cwe">CWE-330</div>
-        <div class="vuln-name">취약 난수 사용</div>
-        <div class="vuln-rule">NO_WEAK_RANDOM</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:15%"></div></div>
-        <div class="vuln-freq">관측률 3.3%</div>
-      </div>
-
-      <!-- 6 NO_DEBUG_MODE -->
-      <div class="vuln-card">
-        <div class="vuln-rank">6</div>
-        <div class="vuln-cwe">CWE-16</div>
-        <div class="vuln-name">디버그 모드 배포</div>
-        <div class="vuln-rule">NO_DEBUG_MODE</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:13%"></div></div>
-        <div class="vuln-freq">관측률 2.9%</div>
-      </div>
-
-      <!-- 7 NO_HARDCODED_SECRETS -->
-      <div class="vuln-card">
-        <div class="vuln-rank">7</div>
-        <div class="vuln-cwe">CWE-798</div>
+        <div class="vuln-cwe">Critical · 1,552건</div>
         <div class="vuln-name">하드코딩 크레덴셜</div>
         <div class="vuln-rule">NO_HARDCODED_SECRETS</div>
-        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:6%"></div></div>
-        <div class="vuln-freq">관측률 1.4%</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:100%"></div></div>
+        <div class="vuln-freq">33.9% 레포 · 점수 5.00</div>
+      </div>
+
+      <!-- 2 NO_EXEC -->
+      <div class="vuln-card">
+        <div class="vuln-rank">2</div>
+        <div class="vuln-cwe">Critical · 913건</div>
+        <div class="vuln-name">쉘 명령어 실행</div>
+        <div class="vuln-rule">NO_EXEC</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:93%"></div></div>
+        <div class="vuln-freq">48.3% 레포 · 점수 4.67</div>
+      </div>
+
+      <!-- 3 SQL_PARAM_BINDING -->
+      <div class="vuln-card">
+        <div class="vuln-rank">3</div>
+        <div class="vuln-cwe">High · 1,564건</div>
+        <div class="vuln-name">SQL 직접 삽입</div>
+        <div class="vuln-rule">SQL_PARAM_BINDING</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:90%"></div></div>
+        <div class="vuln-freq">56.7% 레포 · 점수 4.52</div>
+      </div>
+
+      <!-- 4 NO_NETWORK / SSRF -->
+      <div class="vuln-card">
+        <div class="vuln-rank">4</div>
+        <div class="vuln-cwe">Critical · 125건</div>
+        <div class="vuln-name">외부 네트워크 호출</div>
+        <div class="vuln-rule">NO_NETWORK</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:71%"></div></div>
+        <div class="vuln-freq">61.3% 레포 · 점수 3.53</div>
+      </div>
+
+      <!-- 5 NO_DEBUG_MODE -->
+      <div class="vuln-card">
+        <div class="vuln-rank">5</div>
+        <div class="vuln-cwe">High · 168건</div>
+        <div class="vuln-name">디버그 모드 배포</div>
+        <div class="vuln-rule">NO_DEBUG_MODE</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:70%"></div></div>
+        <div class="vuln-freq">10.2% 레포 · 점수 3.52</div>
+      </div>
+
+      <!-- 6 NO_INSECURE_HASH -->
+      <div class="vuln-card">
+        <div class="vuln-rank">6</div>
+        <div class="vuln-cwe">High · 133건</div>
+        <div class="vuln-name">MD5/SHA1 취약 해시</div>
+        <div class="vuln-rule">NO_INSECURE_HASH</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:69%"></div></div>
+        <div class="vuln-freq">8.7% 레포 · 점수 3.46</div>
+      </div>
+
+      <!-- 7 NO_BARE_EXCEPT -->
+      <div class="vuln-card">
+        <div class="vuln-rank">7</div>
+        <div class="vuln-cwe">Medium · AST 독립탐지</div>
+        <div class="vuln-name">에러 침묵 처리</div>
+        <div class="vuln-rule">NO_BARE_EXCEPT</div>
+        <div class="vuln-bar"><div class="vuln-bar-fill" style="width:60%"></div></div>
+        <div class="vuln-freq">42.1% 레포 · 점수 3.00</div>
       </div>
 
     </div>
@@ -1146,24 +1146,24 @@ code.inline{
     <!-- Dataset provenance -->
     <div class="dataset-callout">
       <div class="ds-stat">
-        <div class="ds-stat-num">12,224</div>
-        <div class="ds-stat-label">GitHub 수집 파일 수</div>
-        <div class="ds-source">CLAUDE.md 보유 레포 → 바이브코딩 직접 증거</div>
+        <div class="ds-stat-num">2,473</div>
+        <div class="ds-stat-label">취약 파일 수</div>
+        <div class="ds-source">dataset + drepos + repos 3개 소스 합산</div>
       </div>
       <div class="ds-stat">
-        <div class="ds-stat-num">853</div>
-        <div class="ds-stat-label">웹서비스 파일 (필터 후)</div>
-        <div class="ds-source">Flask · FastAPI · Django · Express · Next.js</div>
-      </div>
-      <div class="ds-stat">
-        <div class="ds-stat-num">1,890</div>
+        <div class="ds-stat-num">4,927</div>
         <div class="ds-stat-label">탐지된 취약점 건수</div>
-        <div class="ds-source">자체 수집 데이터셋 AST 분석 결과</div>
+        <div class="ds-source">extract_vulns.py 분석 결과</div>
       </div>
       <div class="ds-stat">
-        <div class="ds-stat-num">116K+</div>
-        <div class="ds-stat-label">교차 검증 샘플</div>
-        <div class="ds-source">HuggingFace CodeAlpaca 20K + code-search-net 100K</div>
+        <div class="ds-stat-num">7</div>
+        <div class="ds-stat-label">확정 SLAyer 룰</div>
+        <div class="ds-source">빈도 × 중요도 매트릭스 선정</div>
+      </div>
+      <div class="ds-stat">
+        <div class="ds-stat-num">3</div>
+        <div class="ds-stat-label">벤치마크 세트</div>
+        <div class="ds-source">vulnerable · fixed · false_positive</div>
       </div>
     </div>
 
