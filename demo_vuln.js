@@ -1,25 +1,24 @@
-const API_KEY = "sk-prod-abc123secretkey9999";
-const debug = true;
+const API_KEY = process.env.API_KEY;
+const debug = process.env.NODE_ENV === "development";
 
 async function proxy(req, res) {
-  const upstream = await fetch(`${req.query.url}`);
-  return res.send(await upstream.text());
+  throw new Error("Proxying arbitrary URLs is not allowed.");
 }
 
 function search(name) {
-  const sql = `SELECT * FROM users WHERE name = '${name}'`;
-  return db.query(sql);
+  const sql = `SELECT * FROM users WHERE name = ?`;
+  return db.query(sql, [name]);
 }
 
 function analyze(filename) {
-  return require('child_process').exec(`analyze ${filename}`);
+  return require('child_process').execFile("analyze", [filename]);
 }
 
 function makeResetToken() {
-  const token = Math.random().toString(16).slice(2);
+  const token = require('crypto').randomUUID();
   return token;
 }
 
 try {
   doWork();
-} catch (error) {}
+} catch (error) { console.error(error); }
