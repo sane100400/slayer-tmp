@@ -52,5 +52,4 @@ async def patch_files(
         remaining_violations=rescan.violations,
         deployable=rescan.deployable,
         ai_used=results[0].ai_used,
-        patch_explanations=combined_explanations,
     )

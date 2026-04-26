@@ -25,10 +25,11 @@ export function DiffViewer({ diff, explanations = [] }: Props) {
             {explanations.map((item, i) => (
               <div key={`${item.file}-${item.line}-${item.rule_id}-${i}`} className="rounded-lg bg-gray-950/70 p-3">
                 <p className="text-sm font-semibold text-gray-100">
-                  {item.rule_name} · {item.file.split("/").pop()}:{item.line}
+                  {item.rule_name} · {item.file.split(/[\\/]/).pop()}:{item.line}
                 </p>
                 <p className="text-xs text-gray-300 mt-1">{item.title}</p>
                 <p className="text-xs text-gray-400 mt-1 leading-relaxed">{item.summary}</p>
+                <p className="text-[11px] text-gray-500 mt-1">{item.guidance}</p>
                 <p className="text-[11px] text-gray-500 mt-1">{item.reference}</p>
               </div>
             ))}
