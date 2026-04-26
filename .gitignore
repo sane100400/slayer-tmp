@@ -22,6 +22,13 @@ src-tauri/.cargo/
 *.egg-info/
 backend/dist/
 
+# Dataset (vibe coding samples — local only, do not commit)
+dataset/
+
+# RAG index (generated from dataset)
+tools/.chroma_index/
+tools/pattern_report.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
