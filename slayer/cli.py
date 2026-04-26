@@ -9,7 +9,7 @@ from rich.console import Console
 
 from slayer.ai_runner import AICliError, AI_CANDIDATES, _is_available, detect_ai_cli, AICliNotFoundError
 from slayer.patcher.llm_patcher import patch_path
-from slayer.reporter import render_json, render_patch_text, render_scan_text
+from slayer.reporter import render_json, render_patch_text, render_scan_text, print_scan_rich, print_patch_rich
 from slayer.scanner import scan_path
 
 app = typer.Typer(add_completion=False, help='SLAyer security scanner and patcher')
@@ -74,14 +74,14 @@ def _print_scan(target: Path, result, output_format: OutputFormatEnum) -> None:
     if output_format == OutputFormatEnum.json:
         typer.echo(render_json(result), nl=False)
     else:
-        typer.echo(render_scan_text(target, result), nl=False)
+        print_scan_rich(target, result)  # Console() defaults to stdout
 
 
 def _print_patch(target: Path, result, output_format: OutputFormatEnum) -> None:
     if output_format == OutputFormatEnum.json:
         typer.echo(render_json(result), nl=False)
     else:
-        typer.echo(render_patch_text(target, result), nl=False)
+        print_patch_rich(target, result)  # Console() defaults to stdout
 
 
 @app.command()

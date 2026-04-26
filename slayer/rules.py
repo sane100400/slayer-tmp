@@ -74,5 +74,58 @@ RULE_GUIDANCE: dict[str, str] = {
 DEFAULT_RULES_BY_ID = {rule.id: rule for rule in DEFAULT_RULES}
 
 
+RULE_DETAILS: dict[str, dict[str, str]] = {
+    "NO_HARDCODED_SECRETS": {
+        "why": (
+            "API 키·비밀번호가 코드에 있으면 git push 한 순간 전 세계에 노출됩니다.\n"
+            "  GitGuardian 통계: 노출 후 평균 3분 내 봇이 수집합니다."
+        ),
+        "fix": "os.environ.get('API_KEY', '') 또는 python-dotenv / process.env.API_KEY 로 교체하세요.",
+    },
+    "NO_EXEC": {
+        "why": (
+            "shell=True 는 명령어 문자열을 sh -c 로 해석합니다.\n"
+            "  세미콜론 하나로 서버 전체 명령 실행이 가능합니다. (CVSS 9.8 / RCE)"
+        ),
+        "fix": "subprocess.run(['cmd', arg], shell=False) — 인수 리스트로 교체하세요.",
+    },
+    "SQL_PARAM_BINDING": {
+        "why": (
+            "f\"SELECT ... '{name}'\" 에서 name='; DROP TABLE users;--' 을 입력하면\n"
+            "  DB 전체가 삭제됩니다. (OWASP A03 SQL Injection)"
+        ),
+        "fix": "cursor.execute('SELECT ... WHERE name=?', (name,)) — 파라미터 바인딩으로 교체하세요.",
+    },
+    "NO_NETWORK": {
+        "why": (
+            "사용자 입력 URL을 그대로 요청하면 내부망(169.254.169.254 등) 조회로\n"
+            "  AWS 자격증명이 탈취됩니다. (SSRF / CWE-918)"
+        ),
+        "fix": "허용 도메인 목록을 검증하거나 고정 엔드포인트를 사용하세요.",
+    },
+    "NO_DEBUG_MODE": {
+        "why": (
+            "debug=True 로 배포하면 Flask/Django 인터랙티브 디버거가 활성화되어\n"
+            "  임의 Python 코드를 원격 실행할 수 있습니다. (CWE-16)"
+        ),
+        "fix": "DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true' 로 교체하세요.",
+    },
+    "NO_WEAK_RANDOM": {
+        "why": (
+            "random.random()은 메르센 트위스터 기반으로, 출력 값에서 내부 상태를\n"
+            "  역산해 OTP·토큰을 예측할 수 있습니다. (CWE-330)"
+        ),
+        "fix": "secrets.token_hex(32) 또는 secrets.token_urlsafe() / crypto.randomUUID() 로 교체하세요.",
+    },
+    "NO_BARE_EXCEPT": {
+        "why": (
+            "예외를 비워 삼키면 공격 침입·비정상 데이터가 로그 없이 통과됩니다.\n"
+            "  IBM 보고서: 침해 평균 감지 시간 207일."
+        ),
+        "fix": "except Exception as e: logger.warning('...', exc_info=True) 로 교체하세요.",
+    },
+}
+
+
 def default_rules() -> list[SLARule]:
     return [rule.model_copy(deep=True) for rule in DEFAULT_RULES]

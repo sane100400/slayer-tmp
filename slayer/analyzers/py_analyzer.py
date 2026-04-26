@@ -86,8 +86,18 @@ def _violation(rule: SLARule, path: Path, lineno: int, lines: list[str], explana
     )
 
 
-def _is_dynamic_network_target(node: ast.AST) -> bool:
-    return not (isinstance(node, ast.Constant) and isinstance(node.value, str))
+def _is_user_controlled_url(node: ast.AST) -> bool:
+    """Flag only URLs that are plausibly user-controlled to avoid false positives on config variables."""
+    if isinstance(node, ast.JoinedStr):  # f-string
+        return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):  # "http://" + var
+        return True
+    if isinstance(node, ast.Subscript):  # data["url"], request.args["url"]
+        return True
+    if isinstance(node, ast.Attribute):  # req.url, request.form.get("url")
+        dotted = _dotted_name(node).lower()
+        return any(w in dotted for w in ('request', 'req', 'query', 'form', 'body', 'args', 'params', 'data'))
+    return False
 
 
 def _body_is_empty_or_pass(body: list[ast.stmt]) -> bool:
@@ -191,14 +201,14 @@ def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]
             if dotted in NETWORK_CALLS:
                 url_arg = node.args[1] if dotted.endswith('.request') and len(node.args) > 1 else (node.args[0] if node.args else None)
                 url_arg = next((kw.value for kw in node.keywords if kw.arg in {'url', 'endpoint'}), url_arg)
-                if url_arg is not None and _is_dynamic_network_target(url_arg):
+                if url_arg is not None and _is_user_controlled_url(url_arg):
                     violations.append(_violation(rules['NO_NETWORK'], path, lineno, lines))
 
             if dotted in EXEC_CALLS:
                 has_shell_true = any(kw.arg == 'shell' and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords)
-                first_arg = node.args[0] if node.args else None
-                dangerous_string = isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str)
-                if dotted.startswith('os.') or has_shell_true or dangerous_string:
+                # os.system / os.popen always use a shell — always flag.
+                # For subprocess.*, only flag when shell=True is explicit.
+                if dotted.startswith('os.') or has_shell_true:
                     violations.append(_violation(rules['NO_EXEC'], path, lineno, lines))
 
             if isinstance(node.func, ast.Attribute) and node.func.attr in {'execute', 'executemany'} and _sql_call_has_binding_issue(node):

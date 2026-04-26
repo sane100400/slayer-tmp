@@ -89,8 +89,10 @@ def analyze(path: Path, source: str) -> list[Violation]:
         network_match = NETWORK_RE.search(line)
         if network_match:
             first_arg = _first_argument(line, network_match)
-            lowered = first_arg.lower()
-            if not _is_safe_literal(first_arg) or any(token in lowered for token in ('req.', 'request.', 'params.', 'query.', 'body.', '${')):
+            # Only flag when there is clear evidence of user-controlled data in the URL.
+            # A plain variable name (e.g. fetch(apiUrl)) is treated as a safe config reference.
+            _SSRF_INDICATORS = ('req.', 'request.', 'params.', 'query.', 'body.', 'args.', 'data.', '${')
+            if any(indicator in first_arg for indicator in _SSRF_INDICATORS):
                 violations.append(_violation('NO_NETWORK', path, lineno, lines))
 
         if EXEC_RE.search(line):
