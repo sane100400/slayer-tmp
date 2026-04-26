@@ -2,8 +2,13 @@ import os
 from pathlib import Path
 import anthropic
 from fastapi import APIRouter, Header
-from models import ScanRequest, ScanResult, Violation
-from analyzers import ast_analyzer, llm_analyzer
+
+try:
+    from backend.models import ScanRequest, ScanResult, Violation
+    from backend.analyzers import ast_analyzer, llm_analyzer
+except ImportError:
+    from models import ScanRequest, ScanResult, Violation
+    from analyzers import ast_analyzer, llm_analyzer
 
 router = APIRouter()
 

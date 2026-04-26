@@ -1,13 +1,24 @@
-import type { SLARule, Violation, ScanResult, PatchResult } from "../types";
+import type { AIChoice, SLARule, Violation, ScanResult, PatchResult } from "../types";
 
 const BASE_URL = "http://127.0.0.1:18765";
+const AI_CLI_KEY = "SLAYER_AI_CLI";
+const VALID_AI_CHOICES = new Set(["auto", "claude", "codex", "gemini"]);
 
 function getApiKey(): string {
   return localStorage.getItem("ANTHROPIC_API_KEY") ?? "";
 }
 
+export function getAiCli(): AIChoice {
+  const value = localStorage.getItem(AI_CLI_KEY) ?? "auto";
+  return VALID_AI_CHOICES.has(value) ? (value as AIChoice) : "auto";
+}
+
 function headers(): HeadersInit {
-  return { "Content-Type": "application/json", "X-API-Key": getApiKey() };
+  return {
+    "Content-Type": "application/json",
+    "X-API-Key": getApiKey(),
+    "X-AI-CLI": getAiCli(),
+  };
 }
 
 async function request<T>(path: string, body: unknown): Promise<T> {
@@ -35,9 +46,10 @@ export async function scanFiles(files: string[], rules: SLARule[]): Promise<Scan
 export async function patchFiles(
   files: string[],
   violations: Violation[],
-  rules: SLARule[]
+  rules: SLARule[],
+  aiCli: AIChoice = getAiCli()
 ): Promise<PatchResult> {
-  return request("/api/patch", { files, violations, rules });
+  return request("/api/patch", { files, violations, rules, ai_cli: aiCli });
 }
 
 export function saveApiKey(key: string) {
@@ -46,4 +58,8 @@ export function saveApiKey(key: string) {
 
 export function hasApiKey(): boolean {
   return !!getApiKey();
+}
+
+export function saveAiCli(aiCli: AIChoice) {
+  localStorage.setItem(AI_CLI_KEY, aiCli);
 }

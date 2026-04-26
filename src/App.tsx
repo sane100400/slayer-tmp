@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Shield, ScanLine, Loader2, Settings } from "lucide-react";
-import { scanFiles, patchFiles, hasApiKey } from "./api/client";
+import { getAiCli, scanFiles, patchFiles } from "./api/client";
 import { FileSelector } from "./components/FileSelector";
 import { VulnDashboard } from "./components/VulnDashboard";
 import { CodeViewer } from "./components/CodeViewer";
@@ -59,13 +59,12 @@ export default function App() {
 
   async function handlePatch() {
     if (!state.scanResult) return;
-    if (!hasApiKey()) { setShowSettings(true); return; }
     setState(s => ({ ...s, step: "patching" }));
     try {
       const violatedFiles = [...new Set(
         state.scanResult!.violations.filter(v => v.rule_id !== "__file_error__").map(v => v.file)
       )];
-      const result = await patchFiles(violatedFiles, state.scanResult!.violations, PRESET_RULES);
+      const result = await patchFiles(violatedFiles, state.scanResult!.violations, PRESET_RULES, getAiCli());
 
       // 백엔드가 이미 재스캔했으므로 remaining_violations로 scanResult 업데이트
       const failIds = new Set(
@@ -168,7 +167,7 @@ export default function App() {
                   className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors"
                 >
                   {patching ? <Loader2 size={18} className="animate-spin" /> : "⚡"}
-                  {patching ? "Claude가 고치는 중…" : "전부 자동 패치"}
+                  {patching ? "AI CLI가 고치는 중…" : "전부 자동 패치"}
                 </button>
               )}
 

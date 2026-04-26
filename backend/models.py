@@ -12,6 +12,7 @@ RuleType = Literal[
     "CUSTOM",               # LLM 자유 판단
 ]
 Severity = Literal["critical", "high", "medium"]
+AIChoice = Literal["auto", "claude", "codex", "gemini"]
 
 
 class SLARule(BaseModel):
@@ -49,6 +50,7 @@ class PatchRequest(BaseModel):
     files: List[str]
     violations: List[Violation]
     rules: List[SLARule]
+    ai_cli: AIChoice = "auto"
 
 
 class PatchResult(BaseModel):
@@ -57,6 +59,7 @@ class PatchResult(BaseModel):
     diff: str
     remaining_violations: List[Violation]
     deployable: bool
+    ai_used: str = "none"
 
 
 class ParseRequest(BaseModel):

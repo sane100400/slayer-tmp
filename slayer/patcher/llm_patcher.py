@@ -87,10 +87,21 @@ def _validate_python(code: str, path: Path) -> None:
 
 
 def _validate_with_command(command: list[str], suffix: str, code: str) -> None:
+    executable = shutil.which(command[0])
+    if executable is None:
+        return
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = Path(temp_dir) / f'candidate{suffix}'
         file_path.write_text(code, encoding='utf-8')
-        result = subprocess.run([*command, str(file_path)], capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            [executable, *command[1:], str(file_path)],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            check=False,
+        )
         if result.returncode != 0:
             raise PatchValidationError(result.stderr.strip() or result.stdout.strip() or '문법 검증 실패')
 
@@ -100,10 +111,10 @@ def validate_syntax(path: Path, code: str) -> None:
     if suffix == '.py':
         _validate_python(code, path)
         return
-    if suffix == '.js' and shutil.which('node'):
+    if suffix == '.js':
         _validate_with_command(['node', '--check'], suffix, code)
         return
-    if suffix in {'.ts', '.tsx'} and shutil.which('tsc'):
+    if suffix in {'.ts', '.tsx'}:
         _validate_with_command(['tsc', '--pretty', 'false', '--noEmit'], suffix, code)
         return
     # JSX/TSX without tsc and other file types are best-effort only.

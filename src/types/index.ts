@@ -9,6 +9,7 @@ export type RuleType =
   | "CUSTOM";
 
 export type Severity = "critical" | "high" | "medium";
+export type AIChoice = "auto" | "claude" | "codex" | "gemini";
 
 export interface SLARule {
   id: string;
@@ -42,6 +43,7 @@ export interface PatchResult {
   diff: string;
   remaining_violations: Violation[];
   deployable: boolean;
+  ai_used: string;
 }
 
 export type AppStep =

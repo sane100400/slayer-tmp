@@ -35,6 +35,21 @@ SLAyer는 **AI 생성 코드의 반복 취약 패턴**을 데이터 기반으로
 
 Python (`.py`) · JavaScript (`.js`, `.jsx`) · TypeScript (`.ts`, `.tsx`)
 
+## 지원 OS 및 AI CLI
+
+- **OS:** Windows, macOS, Linux에서 동작하도록 경로 처리와 CLI 실행을 `pathlib`/`subprocess` 기반으로 유지합니다.
+- **Python:** 3.11 이상
+- **AI CLI 패치:** 로컬 PATH에 설치된 Claude Code, Codex CLI, Gemini CLI를 지원합니다.
+
+```bash
+slayer model auto      # claude → codex → gemini 순서로 자동 감지
+slayer model claude    # Claude Code: claude -p
+slayer model codex     # Codex CLI: codex exec
+slayer model gemini    # Gemini CLI: gemini --prompt
+```
+
+`slayer start`는 AI CLI 없이도 동작하고, `slayer patch`만 위 AI CLI 중 하나가 필요합니다.
+
 ---
 
 ## 사용법

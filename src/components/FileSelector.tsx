@@ -17,9 +17,9 @@ export function FileSelector({ selectedFiles, activeFile, onFilesChange, onFileC
     if (!path.trim()) return;
     setError("");
     try {
-      const files = await invoke<string[]>("list_py_files", { dir: path.trim() });
+      const files = await invoke<string[]>("list_source_files", { path: path.trim() });
       if (files.length === 0) {
-        setError("Python 파일(.py)을 찾을 수 없어요");
+        setError("지원하는 소스 파일(.py, .js, .jsx, .ts, .tsx)을 찾을 수 없어요");
       } else {
         onFilesChange(files);
       }
@@ -57,7 +57,7 @@ export function FileSelector({ selectedFiles, activeFile, onFilesChange, onFileC
           value={manualPath}
           onChange={(e) => setManualPath(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && loadPath(manualPath)}
-          placeholder="/home/user/myproject"
+          placeholder="/home/user/myproject 또는 C:\\Users\\me\\project"
           className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
         />
         <button
@@ -77,7 +77,7 @@ export function FileSelector({ selectedFiles, activeFile, onFilesChange, onFileC
         <div className="flex flex-col gap-0.5 max-h-44 overflow-y-auto">
           <p className="text-xs text-gray-400 mb-1">{selectedFiles.length}개 파일 선택됨</p>
           {selectedFiles.map((f) => {
-            const name = f.split("/").pop() ?? f;
+            const name = f.split(/[\\/]/).pop() ?? f;
             return (
               <button
                 key={f}

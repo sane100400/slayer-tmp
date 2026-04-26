@@ -49,6 +49,20 @@ def test_patch_uses_explicit_ai_selection_and_rescans_clean(tmp_path, fake_ai_en
     assert str(target.resolve()) in result.diffs
 
 
+def test_patch_handles_paths_with_spaces(tmp_path, fake_ai_env, monkeypatch):
+    project = tmp_path / 'project with spaces'
+    project.mkdir()
+    target = project / 'demo.py'
+    target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
+    monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n')
+
+    result = patch_path(target, selected_ai='gemini')
+
+    assert result.ai_used == 'gemini'
+    assert result.deployable is True
+    assert 'os.environ.get' in target.read_text(encoding='utf-8')
+
+
 def test_patch_cli_json_output(tmp_path, fake_ai_env, monkeypatch):
     target = tmp_path / 'demo.py'
     target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
