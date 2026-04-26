@@ -455,20 +455,118 @@ PATCH_PROMPT = """
 
 ## 10. Acceptance Criteria
 
-| ID | 조건 | 검증 |
-|----|------|------|
-| AC-01 | `slayer scan <path>` → `.py` 자동 수집 후 TUI 실행 | 직접 실행 |
-| AC-02 | `.py` 없으면 warning + exit 0 | 빈 디렉토리 |
-| AC-03 | AST 스캔 3초 이내 TUI 렌더링 (1000줄 이하) | 타이머 |
-| AC-04 | `--rules` 미입력 시 `.slayer.yml` fallback, 없으면 기본 4개 룰 | 빈 입력 |
-| AC-05 | 룰별 위반 + file:line + 한국어 explanation + 코드 컨텍스트 | TUI 탐색 |
-| AC-06 | violations 있으면 exit 1 (`--ci` 모드) | `echo $?` |
-| AC-07 | `f` 키 → 패치 완료 후 자동 재스캔 → TUI 업데이트 | TUI 조작 |
-| AC-08 | 패치 후 전체 통과 → "Deployment Approved" 배너 → exit 0 | 재스캔 |
-| AC-09 | `--format json --ci` → 파싱 가능한 JSON stdout | `jq` 파이핑 |
-| AC-10 | AI CLI 없으면 TUI 인라인 안내 + AST 스캔은 계속 동작 | CLI 없이 실행 |
-| AC-11 | SyntaxError 파일 → warning badge 후 나머지 계속 | 깨진 .py 포함 |
-| AC-12 | TUI Fix 스피너에 사용 중인 AI CLI 이름 표시 | 시각 확인 |
+### AC-01 — start: TUI 자동 실행
+```
+Given: 터미널에서 `slayer start demo_vuln.py` 실행 (stdout=TTY)
+When:  명령어 완료
+Then:  Textual TUI가 열리고 Files panel에 demo_vuln.py가 표시된다
+       Violations panel에 1개 이상의 위반이 표시된다
+```
+
+### AC-02 — start: CI 자동 감지
+```
+Given: `slayer start demo_vuln.py | cat` (stdout≠TTY)
+When:  명령어 완료
+Then:  TUI 없이 plain text 출력
+       위반 목록이 "✗ RULE_TYPE  file:line  snippet" 형식으로 출력된다
+       exit code 1
+```
+
+### AC-03 — start: .py 없는 디렉토리
+```
+Given: .py 파일이 없는 빈 디렉토리 경로로 `slayer start ./empty/`
+When:  명령어 완료
+Then:  "No Python files found" 메시지 출력
+       exit code 0
+```
+
+### AC-04 — start: AST 스캔 속도
+```
+Given: 1000줄 이하 .py 파일
+When:  `slayer start` 실행
+Then:  TUI 첫 렌더링까지 3초 이내
+       스캔 중 "Scanning..." 스피너 표시
+```
+
+### AC-05 — start: 위반 정보 완전성
+```
+Given: demo_vuln.py (NO_NETWORK, NO_EXEC, NO_HARDCODED_SECRETS, SQL_PARAM_BINDING 포함)
+When:  TUI에서 위반 항목 선택
+Then:  Violations panel: rule_type + file명 + 라인 번호 표시
+       Code viewer: 위반 라인 ±3줄, 해당 라인 "►" 강조
+       explanation은 한국어 ("~을 하면 ~이 됩니다" 형식)
+```
+
+### AC-06 — start: 기본 룰 자동 적용
+```
+Given: `slayer start .` (rules 옵션 없음, .slayer.yml 없음)
+When:  스캔 실행
+Then:  7종 Vibe Coding 룰이 자동 적용되어 스캔된다
+       demo_vuln.py에서 4개 이상의 위반이 탐지된다
+```
+
+### AC-07 — start: TUI Fix 플로우
+```
+Given: TUI 실행 중, violations > 0
+When:  `f` 키 입력
+Then:  "Patching via {ai_name}..." 스피너 표시 (ai_name = 감지된 CLI 이름)
+       파일이 직접 수정됨 (원본과 diff 발생)
+       자동 재스캔 실행
+       violations = 0이면 "🚀 Deployment Approved" 배너 표시
+```
+
+### AC-08 — patch: non-interactive 패치
+```
+Given: `slayer patch demo_vuln.py` (AI CLI 설치된 환경)
+When:  명령어 완료
+Then:  터미널에 패치 진행 상황 출력 ("Patching via {ai_name}...")
+       파일이 수정됨
+       재스캔 후 violations = 0이면 "🚀 Deployment Approved" 출력, exit 0
+       잔여 violations 있으면 목록 출력, exit 1
+```
+
+### AC-09 — patch: JSON 출력
+```
+Given: `slayer patch demo_vuln.py --format json`
+When:  명령어 완료
+Then:  stdout이 파싱 가능한 JSON
+       스키마: { patched_files[], diffs{}, remaining_violations[], deployable, ai_used }
+       `| jq '.deployable'` → true 또는 false
+```
+
+### AC-10 — AI CLI 없는 환경
+```
+Given: claude/codex/gemini 모두 미설치 환경에서 `slayer start .`
+When:  TUI 실행
+Then:  AST 스캔은 정상 동작하여 violations 표시
+       `f` 키 입력 시 빨간 에러 박스:
+         "AI CLI가 감지되지 않았습니다.
+          다음 중 하나를 설치하세요:
+          • Claude Code  https://claude.ai/code
+          • Codex CLI    npm install -g @openai/codex
+          • Gemini CLI   npm install -g @google/gemini-cli"
+```
+
+### AC-11 — SyntaxError 파일 처리
+```
+Given: SyntaxError가 있는 broken.py가 스캔 대상에 포함
+When:  `slayer start .`
+Then:  broken.py에 "⚠ syntax error" 배지 표시
+       나머지 정상 .py 파일은 계속 스캔됨
+       exit code는 나머지 파일 결과에 따름
+```
+
+### AC-12 — demo_vuln.py 전체 시나리오
+```
+Given: demo_vuln.py (requests, subprocess shell=True, 하드코딩 credential, f-string SQL)
+When:  `slayer patch demo_vuln.py` (claude 설치 환경)
+Then:  다음 4개 이상 위반 탐지됨:
+         NO_NETWORK (line 9), NO_HARDCODED_SECRETS (line 5),
+         SQL_PARAM_BINDING (line 13), NO_EXEC (line 17)
+       패치 후 모든 위반 제거됨
+       수정된 코드가 Python 문법 오류 없이 파싱 가능 (`ast.parse` 통과)
+       exit code 0
+```
 
 ---
 
