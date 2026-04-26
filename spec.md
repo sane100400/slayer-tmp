@@ -34,23 +34,66 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | 구성 | 내용 |
 |------|------|
 | 수집 방법 | GitHub Code Search API (`filename:CLAUDE.md`) |
-| 규모 | 1,000개 레포 · 607,369개 코드 파일 분석 |
+| 규모 | 바이브코딩 레포 직접 수집 |
 | 분석 도구 | `tools/extract_vulns.py` |
-| 결과 | `dataset/analysis.json`, `dataset/analysis.csv` |
+| 결과 | `dataset/analysis.json` (취약파일 336개 · 485건) |
 
-**관측된 취약점 빈도** (실제 바이브코딩 레포 기준):
+**관측된 취약점 빈도** (`dataset/analysis.json` 기준, 3개 소스 합산):
 
-| 룰 | 총 위반 건수 | 위반 레포 비율 |
-|----|------------|-------------|
-| NO_NETWORK | 120,699 | 61.3% |
-| NO_EXEC (shell=True) | 35,994 | 48.3% |
-| SQL_PARAM_BINDING | 28,659 | 56.7% |
-| NO_HARDCODED_SECRETS | 23,762 | 33.9% |
-| NO_BARE_EXCEPT | 20,455 | 42.1% |
-| NO_DEBUG_MODE | 946 | 10.2% |
-| NO_INSECURE_HASH | 771 | 8.7% |
+| SLAyer 룰 | extract_vulns 룰명 | 관측 건수 (합산) | 비고 |
+|-----------|------------------|---------------|------|
+| SQL_PARAM_BINDING | SQL_INJECTION | **1,564** | 실레포 1,524건 포함 |
+| NO_HARDCODED_SECRETS | HARDCODED_SECRETS | **1,552** | API 키 하드코딩 |
+| NO_EXEC | COMMAND_INJECTION | **913** | shell=True |
+| NO_DEBUG_MODE | DEBUG_MODE_ON | 168 | debug=True 배포 |
+| NO_INSECURE_HASH | WEAK_HASH | 133 | MD5/SHA1 패스워드 |
+| NO_NETWORK | SSRF | 125 | 유저 입력 URL 기준 |
+| NO_BARE_EXCEPT | _(미탐지)_ | — | extract_vulns.py 스코프 외, SLAyer AST 독립 탐지 |
+
+> 총 4,927건 / 취약 파일 2,473개 (dataset + drepos + repos 3개 소스 합산)
 
 > 이 빈도 데이터를 근거로 7종 룰을 선정한다.
+
+---
+
+## 0.55 7종 선정 방법론 — 빈도 × 중요도 매트릭스
+
+### 중요도 5축 평가 (각 1–5점)
+
+| 축 | 설명 | 가중치 |
+|----|------|--------|
+| **A. 실세계 공격 가능성** | CVSS Exploitability 기준 (공격 복잡도 역수) | 25% |
+| **B. 피해 심각도** | 데이터 유출 / RCE / 재정 피해 최대치 | 25% |
+| **C. Time-to-Exploit** | 봇 자동화 기준 최초 공격까지 걸리는 시간 | 20% |
+| **D. AST/Regex 탐지 신뢰도** | 결정적 탐지 가능 여부 (FP·FN 최소화) | 15% |
+| **E. AI 코드 증폭 인수** | 인간 코드 대비 AI 생성 코드에서 얼마나 더 자주·심하게 발생 | 15% |
+
+### 최종 선정 공식
+
+```
+최종 점수 = 중요도_가중합(A~E) × 0.6 + 빈도_정규화 × 0.4
+
+빈도 정규화 = log10(count) / log10(max_count) × 5   # 1–5점 척도로 환산
+```
+
+### 후보 → 최종 7종 선정 결과
+
+빈도 정규화: `log10(1564) = 3.194` 기준 (max = SQL_INJECTION 1,564건)
+
+| 룰 | 중요도합산 | 관측건수 | 빈도점수(1-5) | 최종점수 | 선정 |
+|----|-----------|---------|-------------|---------|------|
+| NO_HARDCODED_SECRETS | 5.00 | 1,552 | 4.99 | **5.00** | ✓ |
+| NO_EXEC | 4.70 | 913 | 4.63 | **4.67** | ✓ |
+| SQL_PARAM_BINDING | 4.20 | 1,564 | 5.00 | **4.52** | ✓ |
+| NO_NETWORK | 3.70 | 125 | 3.28 | **3.53** | ✓ |
+| NO_DEBUG_MODE | 3.55 | 168 | 3.48 | **3.52** | ✓ |
+| NO_INSECURE_HASH | 3.55 | 133 | 3.32 | **3.46** | ✓ |
+| NO_BARE_EXCEPT | 3.00 | _(SLAyer 독립탐지)_ | 3.00† | **3.00** | ✓ |
+| INSECURE_DESERIALIZATION | 4.20 | 31 | 2.33 | 3.45 | — AST 탐지 미구현 (v2 후보) |
+| CORS_WILDCARD | 2.95 | 167 | 3.48 | 3.16 | — FP 높음 |
+| INSECURE_COOKIE | 2.60 | 186 | 3.55 | 2.98 | — JS 전용, 스코프 외 |
+
+† NO_BARE_EXCEPT: extract_vulns.py 스코프 외. SLAyer AST 탐지 독립 운용, 빈도점수 3.00(추정) 적용.
 
 ### 벤치마크 데이터셋
 

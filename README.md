@@ -31,6 +31,31 @@ SLAyer는 **AI 생성 코드의 반복 취약 패턴**을 데이터 기반으로
 
 ---
 
+## 왜 이 7가지인가?
+
+`CLAUDE.md` 보유 GitHub 레포 1,000개(607,369 파일)를 직접 수집·분석해 빈도를 측정하고,  
+**빈도 × 중요도 합산 매트릭스**로 최종 7종을 선별했다.
+
+```
+최종 점수 = 중요도_가중합 × 0.6 + log10(빈도) / log10(max) × 5 × 0.4
+```
+
+중요도는 5축으로 평가: 공격 가능성(25%) · 피해 심각도(25%) · Time-to-Exploit(20%) · 탐지 신뢰도(15%) · AI 증폭 인수(15%).
+
+| 룰 | 최종 점수 | 관측 건수 (analysis.json) |
+|----|-----------|--------------------------|
+| NO_HARDCODED_SECRETS | 5.00 | 202건 |
+| NO_EXEC | 3.98 | 22건 |
+| SQL_PARAM_BINDING | 3.91 | 40건 |
+| NO_DEBUG_MODE | 3.87 | 100건 |
+| NO_BARE_EXCEPT | 3.00 | SLAyer AST 독립 탐지 |
+| NO_INSECURE_HASH | 2.91 | 8건 |
+| NO_NETWORK | 2.63 | 3건 (SSRF 엄격 기준) |
+
+> 상세 방법론: [`spec.md § 0.55`](./spec.md)
+
+---
+
 ## 지원 언어
 
 Python (`.py`) · JavaScript (`.js`, `.jsx`) · TypeScript (`.ts`, `.tsx`)

@@ -983,8 +983,8 @@ code.inline{
 
     <p class="lead">
       기존 보안 도구는 일반 개발자 코드를 기준으로 한다.
-      SLAyer는 <strong>바이브코더의 코드만</strong> 대상으로 패턴을 관측하고,
-      빈도·영향도·수정 가능성 3축으로 7종을 선별한다.
+      SLAyer는 <strong>바이브코더의 코드만</strong> 대상으로 GitHub 1,000개 레포를 직접 분석하고,
+      <strong>빈도 × 중요도 합산 매트릭스</strong>로 7종을 선별한다.
     </p>
 
     <div class="method-steps">
@@ -992,45 +992,62 @@ code.inline{
         <div class="method-n">STEP 01</div>
         <div class="method-title">데이터 수집</div>
         <div class="method-desc">
-          <code class="inline" style="font-size:10px">CLAUDE.md</code> 보유<br>GitHub 레포 수집<br>Flask · FastAPI · Django<br>Python + JS/TS
+          <code class="inline" style="font-size:10px">CLAUDE.md</code> 보유<br>GitHub 1,000 레포<br>607,369개 파일<br>Python + JS/TS
         </div>
       </div>
       <div class="method-step active">
         <div class="method-n">STEP 02</div>
         <div class="method-title">전수 분석</div>
         <div class="method-desc">
-          12,224개 파일<br>AST + Regex<br>패턴 후보별<br>발생 빈도 카운팅
+          AST + Regex<br>패턴 후보별<br>발생 빈도 카운팅<br>→ 빈도 점수
         </div>
       </div>
       <div class="method-step active">
         <div class="method-n">STEP 03</div>
-        <div class="method-title">HF 교차 검증</div>
+        <div class="method-title">중요도 매트릭스</div>
         <div class="method-desc">
-          CodeAlpaca 16K<br>code-search-net 100K<br>총 116,629 샘플<br>빈도 교차 확인
+          5축 평가<br>공격 난이도 · 피해<br>탐지 신뢰도<br>AI 증폭 인수
         </div>
       </div>
       <div class="method-step active">
         <div class="method-n">STEP 04</div>
-        <div class="method-title">CWE 매핑</div>
+        <div class="method-title">점수 합산</div>
         <div class="method-desc">
-          관측 패턴을<br>CWE Top 25 매핑<br>영향도·악용 난이도<br>가중치 산정
+          중요도 × 0.6<br>+ 빈도 정규화 × 0.4<br>후보 14종 → 상위 7종<br>CWE 매핑 확정
         </div>
       </div>
       <div class="method-step active">
         <div class="method-n">STEP 05</div>
         <div class="method-title">7종 확정</div>
         <div class="method-desc">
-          빈도 + CWE 영향도<br>+ 자동 패치 가능성<br>3축 최종 선별<br>→ SLAyer 룰셋
+          AST 결정적 탐지<br>자동 패치 가능성<br>최종 검증<br>→ SLAyer 룰셋
         </div>
       </div>
     </div>
 
-    <div style="margin:16px 0;padding:14px 18px;border-left:3px solid var(--R);background:var(--Rfog)">
-      <div style="font-size:13px;color:var(--T);line-height:1.6">"Existing tools target the <strong>general developer population</strong>. There is a pressing need for tools calibrated to <strong>systematic failure modes of generative AI</strong>."</div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--T3);margin-top:6px">Waseem et al. (2025) — Vibe Coding in Practice</div>
+    <!-- Matrix formula callout -->
+    <div style="margin:12px 0;display:grid;grid-template-columns:1fr 1px 2fr;gap:0;border:1px solid var(--line)">
+      <div style="padding:12px 16px;background:var(--bg1)">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--T3);margin-bottom:8px">중요도 5축 (×0.6)</div>
+        <div style="font-size:12px;color:var(--T2);line-height:1.8">
+          A. 실세계 공격 가능성 <span style="color:var(--R2);font-family:var(--mono)">×0.25</span><br>
+          B. 피해 심각도 <span style="color:var(--R2);font-family:var(--mono)">×0.25</span><br>
+          C. Time-to-Exploit <span style="color:var(--R2);font-family:var(--mono)">×0.20</span><br>
+          D. AST/Regex 탐지 신뢰도 <span style="color:var(--R2);font-family:var(--mono)">×0.15</span><br>
+          E. AI 코드 증폭 인수 <span style="color:var(--R2);font-family:var(--mono)">×0.15</span>
+        </div>
+      </div>
+      <div style="background:var(--line)"></div>
+      <div style="padding:12px 16px;background:var(--bg2);display:flex;flex-direction:column;justify-content:center">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--T3);margin-bottom:8px">최종 선정 공식</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--T);line-height:1.9">
+          Score = <span style="color:var(--R2)">중요도합산</span> × 0.6 + <span style="color:var(--amber)">log(빈도)</span> / log(max) × 5 × 0.4
+        </div>
+        <div style="font-size:12px;color:var(--T3);margin-top:6px">빈도 출처: GitHub 607,369파일 AST 분석 · 각 1–5점 척도</div>
+      </div>
     </div>
 
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
       <span class="tag">bandit 대비: AI 특화 룰셋</span>
       <span class="tag">semgrep 대비: 설치 0줄</span>
       <span class="tag">sonarqube 대비: pip 한 줄</span>
