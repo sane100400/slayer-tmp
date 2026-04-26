@@ -229,16 +229,23 @@ def analyze_py(fp: str, src: str) -> list[dict]:
                     f"{hash_name.upper()} — 1초 내 해독 가능, DB 유출 시 비밀번호 전원 노출됩니다."))
 
             # COMMAND_INJECTION
-            EXEC_ATTRS = {
-                "subprocess": {"run", "Popen", "call", "check_output", "check_call"},
-                "os": {"system", "popen", "execvp", "execve", "popen2"},
-            }
-            if fn_name in {"eval", "exec", "compile"} and isinstance(fn, ast.Name):
+            OS_EXEC_ATTRS = {"system", "popen", "execvp", "execve", "popen2"}
+            SUBPROCESS_ATTRS = {"run", "Popen", "call", "check_output", "check_call"}
+            if fn_name in {"eval", "exec"} and isinstance(fn, ast.Name):
                 viols.append(_v("COMMAND_INJECTION", fp, lines, ln, node.col_offset,
                     f"{fn_name}() — 코드가 동적 실행되어 서버가 원격 조종당할 수 있어요."))
-            elif obj_name in EXEC_ATTRS and fn_attr in EXEC_ATTRS[obj_name]:
+            elif obj_name == "os" and fn_attr in OS_EXEC_ATTRS:
                 viols.append(_v("COMMAND_INJECTION", fp, lines, ln, node.col_offset,
-                    f"{obj_name}.{fn_attr}() — 서버 명령어가 원격 실행될 수 있어요."))
+                    f"os.{fn_attr}() — 서버 명령어가 원격 실행될 수 있어요."))
+            elif obj_name == "subprocess" and fn_attr in SUBPROCESS_ATTRS:
+                # shell=True 있을 때만 — shell=False는 안전
+                has_shell_true = any(
+                    kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True
+                    for kw in node.keywords
+                )
+                if has_shell_true:
+                    viols.append(_v("COMMAND_INJECTION", fp, lines, ln, node.col_offset,
+                        f"subprocess.{fn_attr}(shell=True) — shell=True는 인수가 그대로 쉘에 전달돼요."))
 
             # OPEN_REDIRECT — redirect() + user-controlled arg
             if fn_name == "redirect":
@@ -251,14 +258,19 @@ def analyze_py(fp: str, src: str) -> list[dict]:
                     viols.append(_v("OPEN_REDIRECT", fp, lines, ln, node.col_offset,
                         "redirect(user_input) — 사용자 입력이 redirect 목적지로 사용돼요."))
 
-            # PATH_TRAVERSAL — open/send_file/send_from_directory + user input
+            # PATH_TRAVERSAL — open/send_file/send_from_directory + user input only
             if fn_name in {"open", "send_file", "send_from_directory", "FileResponse"}:
                 if node.args and isinstance(node.args[0], ast.Name) and node.args[0].id in user_vars:
                     viols.append(_v("PATH_TRAVERSAL", fp, lines, ln, node.col_offset,
                         "open(user_input) — 공격자가 서버의 임의 파일을 읽을 수 있어요."))
                 elif node.args and isinstance(node.args[0], ast.JoinedStr):
-                    viols.append(_v("PATH_TRAVERSAL", fp, lines, ln, node.col_offset,
-                        "f-string 파일 경로 — 경로 조작으로 서버 파일이 노출될 수 있어요."))
+                    # f-string 파일 경로 중 user-input 유래 변수 포함된 것만
+                    fstr_src = ast.unparse(node.args[0]) if hasattr(ast, "unparse") else ""
+                    if any(uv in fstr_src for uv in user_vars) or any(
+                        s in fstr_src for s in ("request.", "req.", "args.", "form.")
+                    ):
+                        viols.append(_v("PATH_TRAVERSAL", fp, lines, ln, node.col_offset,
+                            "f-string 파일 경로(사용자 입력) — 경로 조작으로 서버 파일이 노출될 수 있어요."))
 
             # INSECURE_DESERIALIZATION
             if fn_attr in {"loads", "load"} and obj_name in {"pickle", "marshal", "shelve"}:
@@ -275,15 +287,19 @@ def analyze_py(fp: str, src: str) -> list[dict]:
                     viols.append(_v("INSECURE_DESERIALIZATION", fp, lines, ln, node.col_offset,
                         "yaml.load() without SafeLoader — 임의 코드가 실행될 수 있어요."))
 
-            # SSRF — requests/httpx + user input
+            # SSRF — requests/httpx + user input (user_vars 유래이거나 request.* 포함)
             if (obj_name in {"requests", "httpx", "urllib"}
                     and fn_attr in {"get", "post", "put", "delete", "request", "urlopen"}):
                 if node.args and isinstance(node.args[0], ast.Name) and node.args[0].id in user_vars:
                     viols.append(_v("SSRF", fp, lines, ln, node.col_offset,
                         "외부 URL을 사용자 입력으로 — 내부 네트워크를 공격자가 스캔할 수 있어요."))
                 elif node.args and isinstance(node.args[0], ast.JoinedStr):
-                    viols.append(_v("SSRF", fp, lines, ln, node.col_offset,
-                        "f-string URL 요청 — 내부 서버로의 SSRF 공격이 가능할 수 있어요."))
+                    fstr_src = ast.unparse(node.args[0]) if hasattr(ast, "unparse") else ""
+                    if any(uv in fstr_src for uv in user_vars) or any(
+                        s in fstr_src for s in ("request.", "req.", "args.", "form.", "params.")
+                    ):
+                        viols.append(_v("SSRF", fp, lines, ln, node.col_offset,
+                            "f-string URL(사용자 입력) — 내부 서버로의 SSRF 공격이 가능해요."))
 
             # CORS_WILDCARD
             if fn_name in {"CORS", "CORSMiddleware"}:
@@ -351,8 +367,8 @@ JS_LINE_RULES: list[tuple[str, re.Pattern, str]] = [
      "MD5/SHA1 — 1초 내 해독 가능, DB 유출 시 비밀번호 전원 노출됩니다."),
 
     ("INSECURE_COOKIE",
-     re.compile(r'res\.cookie\s*\([^)]*\)', re.I),
-     "res.cookie — httpOnly/secure 옵션 누락 여부를 확인하세요."),
+     re.compile(r'res\.cookie\s*\([^)]*\)(?!.*(?:httpOnly|secure)\s*:\s*true)', re.I),
+     "res.cookie — httpOnly/secure 옵션 없음: JS로 쿠키가 탈취될 수 있어요."),
 
     ("OPEN_REDIRECT",
      re.compile(r'res\.redirect\s*\(\s*req\.(query|params|body|headers)', re.I),
@@ -375,7 +391,7 @@ JS_LINE_RULES: list[tuple[str, re.Pattern, str]] = [
      "Object.assign(model, req.body) — 사용자가 임의 필드를 덮어쓸 수 있어요."),
 
     ("CORS_WILDCARD",
-     re.compile(r"(origin\s*[:=]\s*['\"]?\*['\"]?|Access-Control-Allow-Origin['\"]?\s*[:=]\s*['\"]?\*)", re.I),
+     re.compile(r"(Access-Control-Allow-Origin['\"]?\s*[:=,]\s*['\"]?\*['\"]?|cors\s*\([^)]*origin\s*:\s*['\"]?\*['\"]?|\ballow_origins\s*=\s*\[['\"]?\*['\"]?\])", re.I),
      "CORS * — 모든 도메인이 API를 호출할 수 있어요."),
 
     ("SSRF",
