@@ -186,10 +186,24 @@ pip install -e ".[dev]"
 
 ## 벤치마크
 
-**slayer-bench-v0** — 수작업 큐레이션 28 케이스 (22 TP + 6 FP-free):
+### slayer-bench-v0 — 수작업 큐레이션
 
-| 룰 | 케이스 수 |
-|----|----------|
+28 케이스 (22 취약 + 6 FP-free) 전수 실행 결과:
+
+| 지표 | 값 |
+|------|-----|
+| TP (정탐) | 22 |
+| FP (오탐) | 0 |
+| TN (정상 정확 처리) | 6 |
+| FN (미탐) | 0 |
+| **Precision** | **1.000** |
+| **Recall** | **1.000** |
+| **F1** | **1.000** |
+
+룰별 케이스 수:
+
+| 룰 | 케이스 |
+|----|--------|
 | NO_WEAK_RANDOM | 5 |
 | NO_NETWORK | 4 |
 | NO_HARDCODED_SECRETS | 3 |
@@ -198,10 +212,22 @@ pip install -e ".[dev]"
 | NO_EXEC | 2 |
 | NO_BARE_EXCEPT | 2 |
 
-**ai-bench-v1** — Claude Haiku가 생성한 실제 웹서비스 코드 4개 파일, 15개 위반 탐지.  
-바이브코딩 결과물에서 SLAyer가 탐지 대상으로 삼는 패턴이 실제로 나타남을 독립 검증.
+### ai-bench-v1 — AI 생성 코드 독립 검증
 
-> 케이스 출처: SecretBench · CredData · OWASP Benchmark · SecurityEval · PatchEval · CVEfixes · SARD/Juliet · NVD CVE
+Claude Haiku(`claude-haiku-4-5`)가 생성한 실제 웹서비스 코드 4개 파일을 SLAyer로 스캔:
+
+| 파일 | 언어 | 라인 수 | 탐지된 위반 |
+|------|------|---------|------------|
+| user-auth-service-py.py | Python | 125 | 10 |
+| data-pipeline-py.py | Python | 240 | 1 |
+| rest-api-js.js | JavaScript | 211 | 4 |
+| webhook-handler-ts.ts | TypeScript | 475 | 0 |
+
+총 15개 위반 탐지. 룰별: SQL_PARAM_BINDING(5) · NO_BARE_EXCEPT(3) · NO_DEBUG_MODE(3) · NO_WEAK_RANDOM(2) · NO_HARDCODED_SECRETS(1) · NO_EXEC(1)
+
+바이브코딩 결과물에서 SLAyer가 탐지 대상으로 삼는 패턴이 실제로 나타남을 학습 데이터와 독립된 방법으로 검증.
+
+> slayer-bench-v0 케이스 출처: SecretBench · CredData · OWASP Benchmark · SecurityEval · PatchEval · CVEfixes · SARD/Juliet · NVD CVE
 
 ---
 
