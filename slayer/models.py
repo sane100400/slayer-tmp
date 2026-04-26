@@ -10,7 +10,7 @@ RuleType = Literal[
     "NO_HARDCODED_SECRETS",
     "SQL_PARAM_BINDING",
     "NO_DEBUG_MODE",
-    "NO_WEAK_RANDOM",
+    "NO_INSECURE_HASH",
     "NO_BARE_EXCEPT",
     "CUSTOM",
 ]
@@ -55,6 +55,16 @@ class ScanResult(BaseModel):
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
 
 
+class PatchExplanation(BaseModel):
+    file: str
+    rule_id: str
+    rule_name: str
+    line: int
+    title: str
+    summary: str
+    guidance: str
+
+
 class PatchResult(BaseModel):
     patched_files: list[str] = Field(default_factory=list)
     diffs: dict[str, str] = Field(default_factory=dict)
@@ -63,3 +73,4 @@ class PatchResult(BaseModel):
     ai_used: str = "none"
     scanned_files: list[str] = Field(default_factory=list)
     syntax_errors: list[SyntaxIssue] = Field(default_factory=list)
+    patch_explanations: list[PatchExplanation] = Field(default_factory=list)

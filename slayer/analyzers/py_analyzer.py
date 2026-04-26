@@ -51,8 +51,9 @@ EXEC_CALLS = {
     'os.execve',
     'os.execvp',
 }
-SECURITY_CONTEXT_WORDS = ('token', 'secret', 'password', 'session', 'otp', 'auth', 'reset', 'csrf')
-RANDOM_CALLS = {'random.random', 'random.randint', 'random.randrange', 'random.choice', 'random.choices'}
+SECURITY_CONTEXT_WORDS = ('token', 'secret', 'password', 'passwd', 'pwd', 'session', 'otp', 'auth', 'reset', 'csrf', 'credential')
+INSECURE_HASH_NAMES = {'md5', 'sha1'}
+INSECURE_HASH_CALLS = {'hashlib.md5', 'hashlib.sha1', 'md5', 'sha1'}
 
 
 def _snippet(lines: list[str], lineno: int) -> str:
@@ -96,6 +97,14 @@ def _body_is_empty_or_pass(body: list[ast.stmt]) -> bool:
     return all(isinstance(stmt, (ast.Pass, ast.Continue)) for stmt in body)
 
 
+def _call_name(node: ast.Call) -> str:
+    if isinstance(node.func, ast.Attribute):
+        return node.func.attr
+    if isinstance(node.func, ast.Name):
+        return node.func.id
+    return ''
+
+
 def _build_parent_map(tree: ast.AST) -> dict[ast.AST, ast.AST]:
     parents: dict[ast.AST, ast.AST] = {}
     for node in ast.walk(tree):
@@ -132,6 +141,19 @@ def _has_security_context(node: ast.AST, parents: dict[ast.AST, ast.AST], line: 
         haystacks.extend(_assignment_targets(current))
         current = parents.get(current)
     return any(any(word in haystack for word in SECURITY_CONTEXT_WORDS) for haystack in haystacks if haystack)
+
+
+def _has_insecure_hash_issue(node: ast.Call, parents: dict[ast.AST, ast.AST], line: str) -> bool:
+    dotted = _dotted_name(node.func)
+    if dotted == 'hashlib.new':
+        if not node.args or not isinstance(node.args[0], ast.Constant):
+            return False
+        algorithm = str(node.args[0].value).lower()
+        if algorithm not in INSECURE_HASH_NAMES:
+            return False
+    elif dotted not in INSECURE_HASH_CALLS:
+        return False
+    return _has_security_context(node, parents, line)
 
 
 def _sql_call_has_binding_issue(node: ast.Call) -> bool:
@@ -196,18 +218,18 @@ def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]
 
             if dotted in EXEC_CALLS:
                 has_shell_true = any(kw.arg == 'shell' and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords)
-                first_arg = node.args[0] if node.args else None
-                dangerous_string = isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str)
-                if dotted.startswith('os.') or has_shell_true or dangerous_string:
+                if dotted.startswith('os.') or has_shell_true:
                     violations.append(_violation(rules['NO_EXEC'], path, lineno, lines))
 
             if isinstance(node.func, ast.Attribute) and node.func.attr in {'execute', 'executemany'} and _sql_call_has_binding_issue(node):
                 violations.append(_violation(rules['SQL_PARAM_BINDING'], path, lineno, lines))
 
-            if dotted in RANDOM_CALLS and _has_security_context(node, parents, line):
-                violations.append(_violation(rules['NO_WEAK_RANDOM'], path, lineno, lines))
+            if _has_insecure_hash_issue(node, parents, line):
+                violations.append(_violation(rules['NO_INSECURE_HASH'], path, lineno, lines))
 
-            if any(kw.arg == 'debug' and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords):
+            if _call_name(node) == 'run' and any(
+                kw.arg == 'debug' and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords
+            ):
                 violations.append(_violation(rules['NO_DEBUG_MODE'], path, lineno, lines))
 
         if isinstance(node, ast.Assign):
@@ -217,11 +239,8 @@ def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]
                     break
 
         if isinstance(node, ast.ExceptHandler):
-            broad_exception = (
-                node.type is None
-                or (isinstance(node.type, ast.Name) and node.type.id == 'Exception' and _body_is_empty_or_pass(node.body))
-            )
-            if broad_exception:
+            broad_exception = node.type is None or (isinstance(node.type, ast.Name) and node.type.id == 'Exception')
+            if broad_exception and _body_is_empty_or_pass(node.body):
                 violations.append(_violation(rules['NO_BARE_EXCEPT'], path, lineno, lines))
 
     return violations, syntax_issues
