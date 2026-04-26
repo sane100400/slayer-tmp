@@ -1,35 +1,39 @@
 # Logs
 logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
 dist
-dist-ssr
-*.local
-
-# Rust / Tauri build artifacts
-src-tauri/target/
-src-tauri/.cargo/
 
 # Python cache
 **/__pycache__/
 **/*.pyc
 *.egg-info/
-backend/dist/
 
-# Dataset artifacts (local only; do not commit)
+# Local config
+.slayer.yml
+
+# Dataset artifacts
 dataset/
+!dataset/
+!dataset/slayer-bench-v0/
+!dataset/slayer-bench-v0/**
+!dataset/ai-bench-v0/
+!dataset/ai-bench-v0/**
+dataset/dataset/
+dataset/drepos/
+dataset/repos/
+dataset/web/
+dataset/analysis.*
+dataset/*_repos.*
+dataset/vuln_stats*
+dataset/vulns_*
+dataset/**/*.log
 
 # RAG index (generated from dataset)
+tools/
 tools/.chroma_index/
 tools/pattern_report.json
 tools/*_pattern_report.json
-tools/collect_vibecoding_datasets.py
 
 # Editor directories and files
 .vscode/*
