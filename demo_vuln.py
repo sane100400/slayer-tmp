@@ -1,6 +1,6 @@
 """
-demo_vuln.py — SLAyer 데모 파일
-spec.md 기준 7대 웹서비스 취약 패턴을 담은 샘플.
+demo_vuln.py — SLAyer demo file
+Sample containing all 7 web-service vulnerability patterns defined in spec.md.
 """
 import random
 import requests

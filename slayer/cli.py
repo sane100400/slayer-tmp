@@ -51,7 +51,7 @@ def _read_required_ai() -> str:
     if value is None:
         return 'auto'
     if value not in _VALID_AI_CHOICES:
-        raise SlayerConfigError(f'.slayer.yml의 ai 값이 잘못되었습니다: {value!r}. claude, codex, gemini, auto 중 하나를 사용하세요.')
+        raise SlayerConfigError(f'Invalid ai value in .slayer.yml: {value!r}. Use one of: claude, codex, gemini, auto.')
     return value
 
 

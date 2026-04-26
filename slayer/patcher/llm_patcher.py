@@ -36,7 +36,7 @@ def build_patch_prompt(path: Path, source: str, violations: list[Violation]) -> 
     language = detect_language(path)
     unique_violations = {violation.rule_name: violation for violation in violations}
     rule_guidance = '\n'.join(
-        f"- {violation.rule_name}: {RULE_GUIDANCE.get(violation.rule_name, '위반을 안전한 대안으로 바꾸세요.')}"
+        f"- {violation.rule_name}: {RULE_GUIDANCE.get(violation.rule_name, 'Replace the violation with a safe alternative.')}"
         for violation in unique_violations.values()
     )
     def _redact_violation(v: Violation) -> dict:
@@ -70,7 +70,7 @@ def _validate_python(code: str, path: Path) -> None:
     try:
         ast.parse(code, filename=str(path))
     except SyntaxError as exc:
-        raise PatchValidationError(f'Python 문법 검증 실패: {exc}') from exc
+        raise PatchValidationError(f'Python syntax validation failed: {exc}') from exc
 
 
 def _validate_with_command(command: list[str], suffix: str, code: str) -> None:
@@ -90,7 +90,7 @@ def _validate_with_command(command: list[str], suffix: str, code: str) -> None:
             check=False,
         )
         if result.returncode != 0:
-            raise PatchValidationError(result.stderr.strip() or result.stdout.strip() or '문법 검증 실패')
+            raise PatchValidationError(result.stderr.strip() or result.stdout.strip() or 'Syntax validation failed')
 
 
 def validate_syntax(path: Path, code: str) -> None:
