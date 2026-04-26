@@ -2,7 +2,11 @@ import json
 import os
 import anthropic
 from fastapi import APIRouter, Header, HTTPException
-from models import ParseRequest, SLARule
+
+try:
+    from backend.models import ParseRequest, SLARule
+except ImportError:
+    from models import ParseRequest, SLARule
 
 router = APIRouter()
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import shutil
 import re
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -42,20 +44,66 @@ class AICliExecutionError(AICliError):
 @dataclass(frozen=True)
 class AICandidate:
     name: str
-    check: tuple[str, ...]
-    runner: Callable[[str], list[str]]
+    executable: str
+    check_args: tuple[str, ...]
+    runner: Callable[[str, str, Path | None], list[str]]
+    captures_last_message: bool = False
+
+    @property
+    def check(self) -> tuple[str, ...]:
+        return (self.executable, *self.check_args)
+
+
+def _claude_runner(executable: str, prompt: str, _: Path | None = None) -> list[str]:
+    return [executable, "-p", prompt, "--output-format", "text"]
+
+
+def _codex_runner(executable: str, prompt: str, output_file: Path | None = None) -> list[str]:
+    command = [
+        executable,
+        "exec",
+        "--skip-git-repo-check",
+        "--sandbox",
+        "read-only",
+        "--color",
+        "never",
+        "--ephemeral",
+    ]
+    if output_file is not None:
+        command.extend(["--output-last-message", str(output_file)])
+    command.append(prompt)
+    return command
+
+
+def _gemini_runner(executable: str, prompt: str, _: Path | None = None) -> list[str]:
+    return [executable, "--prompt", prompt]
 
 
 AI_CANDIDATES: tuple[AICandidate, ...] = (
-    AICandidate("claude", ("claude", "--version"), lambda prompt: ["claude", "-p", prompt]),
-    AICandidate("codex", ("codex", "--version"), lambda prompt: ["codex", "exec", prompt]),
-    AICandidate("gemini", ("gemini", "--version"), lambda prompt: ["gemini", prompt]),
+    AICandidate("claude", "claude", ("--version",), _claude_runner),
+    AICandidate("codex", "codex", ("--version",), _codex_runner, captures_last_message=True),
+    AICandidate("gemini", "gemini", ("--version",), _gemini_runner),
 )
 
 
+def _resolve_executable(candidate: AICandidate) -> str | None:
+    return shutil.which(candidate.executable)
+
+
 def _is_available(candidate: AICandidate) -> bool:
+    executable = _resolve_executable(candidate)
+    if executable is None:
+        return False
     try:
-        result = subprocess.run(candidate.check, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            [executable, *candidate.check_args],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
     except FileNotFoundError:
         return False
     return result.returncode == 0
@@ -84,27 +132,40 @@ def run_ai(
     candidate: AICandidate | None = None,
 ) -> tuple[str, AICandidate]:
     selected = candidate or detect_ai_cli(preferred=preferred)
-    try:
-        result = subprocess.run(
-            selected.runner(prompt),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=str(cwd) if cwd else None,
-            check=False,
-        )
-    except FileNotFoundError as exc:
-        raise AICliNotFoundError(preferred=selected.name) from exc
-    except subprocess.TimeoutExpired as exc:
-        raise AICliTimeoutError(f"{selected.name} 실행이 {timeout}초 안에 끝나지 않았습니다.") from exc
+    executable = _resolve_executable(selected)
+    if executable is None:
+        raise AICliNotFoundError(preferred=selected.name)
 
-    if result.returncode != 0:
-        stderr = (result.stderr or "").strip()
-        raise AICliExecutionError(
-            f"{selected.name} 실행이 실패했습니다 (exit={result.returncode}).{('\n' + stderr) if stderr else ''}"
-        )
+    with tempfile.TemporaryDirectory(prefix="slayer-ai-") as temp_dir:
+        output_file = Path(temp_dir) / "last-message.txt" if selected.captures_last_message else None
+        command = selected.runner(executable, prompt, output_file)
+        try:
+            result = subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=timeout,
+                cwd=str(cwd) if cwd else None,
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            raise AICliNotFoundError(preferred=selected.name) from exc
+        except subprocess.TimeoutExpired as exc:
+            raise AICliTimeoutError(f"{selected.name} 실행이 {timeout}초 안에 끝나지 않았습니다.") from exc
 
-    return result.stdout, selected
+        if result.returncode != 0:
+            stderr = (result.stderr or "").strip()
+            raise AICliExecutionError(
+                f"{selected.name} 실행이 실패했습니다 (exit={result.returncode}).{('\n' + stderr) if stderr else ''}"
+            )
+
+        output = result.stdout
+        if output_file is not None and output_file.exists():
+            output = output_file.read_text(encoding="utf-8", errors="replace")
+        return output, selected
 
 
 def extract_code(text: str) -> str:

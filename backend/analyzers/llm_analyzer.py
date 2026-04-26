@@ -1,6 +1,10 @@
 import json
 import anthropic
-from models import SLARule, Violation
+
+try:
+    from backend.models import SLARule, Violation
+except ImportError:
+    from models import SLARule, Violation
 
 ANALYZE_SYSTEM = """Python 코드를 주어진 보안 룰에 따라 검사하세요.
 위반 발견 시 JSON 배열 반환, 없으면 빈 배열 [] 반환.

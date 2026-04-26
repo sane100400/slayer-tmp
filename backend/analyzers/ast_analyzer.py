@@ -1,7 +1,11 @@
 import ast
 import re
 from typing import List
-from models import SLARule, Violation
+
+try:
+    from backend.models import SLARule, Violation
+except ImportError:
+    from models import SLARule, Violation
 
 # ── 사용자 친화 설명 ──────────────────────────────────────────────
 FRIENDLY_MSG = {

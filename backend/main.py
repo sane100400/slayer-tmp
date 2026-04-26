@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import sla, scan, patch
 import argparse
 import uvicorn
+
+try:
+    from .routers import sla, scan, patch
+except ImportError:
+    from routers import sla, scan, patch
 
 app = FastAPI(title="SLAyer API")
 app.add_middleware(

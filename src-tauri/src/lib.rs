@@ -5,8 +5,15 @@ use std::sync::Mutex;
 struct SidecarState(Mutex<Option<Child>>);
 
 const SKIP_DIRS: &[&str] = &[
-    ".git", "__pycache__", "node_modules", "venv", ".venv", "dist", "build",
+    ".git",
+    "__pycache__",
+    "node_modules",
+    "venv",
+    ".venv",
+    "dist",
+    "build",
 ];
+const SUPPORTED_EXTENSIONS: &[&str] = &["py", "js", "jsx", "ts", "tsx"];
 
 #[tauri::command]
 async fn pick_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
@@ -14,7 +21,7 @@ async fn pick_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
     if let Some(folder) = app
         .dialog()
         .file()
-        .set_title("Select directory containing Python files")
+        .set_title("Select directory containing source files")
         .blocking_pick_folder()
     {
         return Ok(Some(folder.to_string()));
@@ -22,8 +29,8 @@ async fn pick_path(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let result = app
         .dialog()
         .file()
-        .set_title("Select a Python file")
-        .add_filter("Python", &["py"])
+        .set_title("Select a Python, JavaScript, or TypeScript file")
+        .add_filter("Source", SUPPORTED_EXTENSIONS)
         .blocking_pick_file();
     Ok(result.map(|p| p.to_string()))
 }
@@ -35,28 +42,49 @@ async fn read_file(path: String) -> Result<String, String> {
 
 #[tauri::command]
 async fn list_py_files(dir: String) -> Result<Vec<String>, String> {
-    let path = std::path::Path::new(&dir);
+    list_source_files_inner(&dir)
+}
+
+#[tauri::command]
+async fn list_source_files(path: String) -> Result<Vec<String>, String> {
+    list_source_files_inner(&path)
+}
+
+fn list_source_files_inner(input: &str) -> Result<Vec<String>, String> {
+    let path = std::path::Path::new(input);
     if path.is_file() {
-        if path.extension().and_then(|e| e.to_str()) == Some("py") {
-            return Ok(vec![dir]);
+        if is_supported_source(path) {
+            return Ok(vec![input.to_string()]);
         }
         return Ok(vec![]);
     }
     let mut files = Vec::new();
-    collect_py_files(path, &mut files)?;
+    collect_source_files(path, &mut files)?;
+    files.sort();
     Ok(files)
 }
 
-fn collect_py_files(dir: &std::path::Path, out: &mut Vec<String>) -> Result<(), String> {
+fn is_supported_source(path: &std::path::Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|ext| {
+            SUPPORTED_EXTENSIONS
+                .iter()
+                .any(|supported| ext.eq_ignore_ascii_case(supported))
+        })
+        .unwrap_or(false)
+}
+
+fn collect_source_files(dir: &std::path::Path, out: &mut Vec<String>) -> Result<(), String> {
     for entry in std::fs::read_dir(dir).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
         if path.is_dir() {
             let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             if !SKIP_DIRS.contains(&name) {
-                collect_py_files(&path, out)?;
+                collect_source_files(&path, out)?;
             }
-        } else if path.extension().and_then(|e| e.to_str()) == Some("py") {
+        } else if is_supported_source(&path) {
             out.push(path.to_string_lossy().to_string());
         }
     }
@@ -84,7 +112,12 @@ pub fn run() {
             let _ = app;
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![pick_path, read_file, list_py_files])
+        .invoke_handler(tauri::generate_handler![
+            pick_path,
+            read_file,
+            list_py_files,
+            list_source_files
+        ])
         .run(tauri::generate_context!())
         .expect("error running SLAyer");
 }
