@@ -10,9 +10,12 @@ Detects 7 security vulnerability patterns in web service code (Python · JS · T
 ```bash
 pip install -e ".[dev]"
 
-slayer start demo_vuln.py   # scan → violation list
-slayer patch demo_vuln.py   # scan → auto-patch → 🚀 Deployment Approved
-slayer start demo_vuln.py   # rescan → clean
+tmp="$(mktemp -d)"
+cp dataset/slayer-bench-v0/vulnerable/python/py_secret_exec_sql.py "$tmp/app.py"
+
+slayer start "$tmp/app.py"   # scan → violation list
+slayer patch "$tmp/app.py"   # scan → auto-patch → 🚀 Deployment Approved
+slayer start "$tmp/app.py"   # rescan → clean
 ```
 
 1. `slayer start` detects security issues without any API key or config.
@@ -97,29 +100,29 @@ slayer model gemini    # lock to Gemini CLI
 
 ```bash
 slayer start .                   # scan current directory
-slayer start demo_vuln.py        # scan a specific file
+slayer start dataset/slayer-bench-v0/vulnerable/python/py_secret_exec_sql.py
 slayer start . --format json     # JSON output for CI/CD
 ```
 
 Example output:
 ```
-  ● CRITICAL  NO_HARDCODED_SECRETS  demo_vuln.py:3
+  ● CRITICAL  NO_HARDCODED_SECRETS  py_secret_exec_sql.py:3
               API_KEY = "sk-prod-abc123..."
               → Use os.environ.get('API_KEY') — keep secrets out of the code.
 
-  ▲ HIGH      SQL_PARAM_BINDING     demo_vuln.py:7
+  ▲ HIGH      SQL_PARAM_BINDING     py_secret_exec_sql.py:7
               cursor.execute(f"SELECT * FROM users WHERE name = '{query}'")
               → Use cursor.execute('SELECT ... WHERE name=?', (name,))
 
-  4 violations · 🔒 Deployment BLOCKED
+  3 violations · 🔒 Deployment BLOCKED
 
-  Run slayer patch demo_vuln.py to fix automatically.
+  Run slayer patch <path> to fix automatically.
 ```
 
 ### slayer patch — auto-patch
 
 ```bash
-slayer patch demo_vuln.py        # scan → patch → rescan
+slayer patch "$tmp/app.py"       # scan → patch → rescan
 slayer patch . --format json     # JSON result output
 ```
 
@@ -127,10 +130,10 @@ Example output:
 ```
   Patching via claude...
 
-  ✓  demo_vuln.py patched
+  ✓  app.py patched
 
   Patch explanations:
-  • NO_HARDCODED_SECRETS  demo_vuln.py:3  — Moved secret values out of the code
+  • NO_HARDCODED_SECRETS  app.py:3  — Moved secret values out of the code
     Replaced hardcoded keys or passwords with environment variable lookups...
 
   🚀 Deployment Approved
@@ -193,9 +196,9 @@ Dependencies: `pydantic` · `typer` · `rich` — no AI SDK, no API key required
 
 ### slayer-bench-v0 — hand-curated
 
-32 cases (22 vulnerable + 6 FP-free + 4 blind_spot), all executed:
+32 cases (22 vulnerable + 6 FP-free + 4 blind_spot), all executed as a smoke benchmark:
 
-**In-scope detection (direct patterns):**
+**In-scope detection (direct patterns):** all vulnerable cases are blocked, and all fixed/FP-free cases are approved in the pytest suite. Known blind spots are documented below.
 
 | Metric | Value |
 |------|-----|
@@ -203,9 +206,6 @@ Dependencies: `pydantic` · `typer` · `rich` — no AI SDK, no API key required
 | FP (false positive) | 0 |
 | TN (true negative) | 6 |
 | FN (false negative) | 0 |
-| **Precision** | **1.000** |
-| **Recall** | **1.000** |
-| **F1** | **1.000** |
 
 **Blind spot cases (known limitations — intentionally not detected):**
 
@@ -277,9 +277,7 @@ Detection runs deterministically without AI. The AI CLI is used for patching onl
 ## Related Files
 
 - [`spec.md`](./spec.md) — detailed development specification
-- [`demo_vuln.py`](./demo_vuln.py) — Python vulnerability pattern demo
-- [`demo_vuln.js`](./demo_vuln.js) — JS vulnerability pattern demo
-- [`dataset/slayer-bench-v0/`](./dataset/slayer-bench-v0/) — vulnerable/patched/FP-free benchmark
+- [`dataset/slayer-bench-v0/`](./dataset/slayer-bench-v0/) — vulnerable/patched/FP-free/blind-spot benchmark
 - [`dataset/ai-bench-v1/`](./dataset/ai-bench-v1/) — AI-generated code benchmark
 - [`presentation.html`](./presentation.html) — presentation slides
 

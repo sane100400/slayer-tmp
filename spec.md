@@ -19,7 +19,8 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 **타겟 사용자**: Claude Code / Codex / Gemini CLI 중 하나가 이미 설치된 바이브코더.
 
 **"SLAyer 설정 제로"의 의미**:
-- SLAyer 자체에 API 키, config 파일, 로그인 없음
+- SLAyer 자체에 API 키나 로그인 없음
+- 기본 실행은 설정 파일 없이 동작하며, AI CLI 선호도만 선택적으로 `.slayer.yml`에 저장
 - AI CLI(Claude Code 등)는 사용자가 이미 설치·인증한 상태를 전제
 - AI CLI 없으면 AST 스캔(탐지)은 동작, 패치만 불가 — 그 경우 설치 안내 표시
 
@@ -35,12 +36,12 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 |------|------|
 | 수집 방법 | GitHub Code Search API (`filename:CLAUDE.md`) |
 | 규모 | 바이브코딩 레포 직접 수집 |
-| 분석 도구 | `tools/extract_vulns.py` |
+| 분석 도구 | `tools/collect_vibecoding_datasets.py` + repo-local analysis pipeline |
 | 결과 | `dataset/analysis.json` (취약파일 336개 · 485건) |
 
 **관측된 취약점 빈도** (`dataset/analysis.json` 기준, 3개 소스 합산):
 
-| SLAyer 룰 | extract_vulns 룰명 | 관측 건수 (합산) | 비고 |
+| SLAyer 룰 | 분석 룰명 | 관측 건수 (합산) | 비고 |
 |-----------|------------------|---------------|------|
 | SQL_PARAM_BINDING | SQL_INJECTION | **1,564** | 실레포 1,524건 포함 |
 | NO_HARDCODED_SECRETS | HARDCODED_SECRETS | **1,552** | API 키 하드코딩 |
@@ -48,7 +49,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | NO_DEBUG_MODE | DEBUG_MODE_ON | 168 | debug=True 배포 |
 | NO_WEAK_RANDOM | WEAK_HASH | 133 | 보안 컨텍스트 약한 난수 (random/Math.random) |
 | NO_NETWORK | SSRF | 125 | 유저 입력 URL 기준 |
-| NO_BARE_EXCEPT | _(미탐지)_ | — | extract_vulns.py 스코프 외, SLAyer AST 독립 탐지 |
+| NO_BARE_EXCEPT | _(미탐지)_ | — | 데이터 수집 스코프 외, SLAyer AST 독립 탐지 |
 
 > 총 4,927건 / 취약 파일 2,473개 (dataset + drepos + repos 3개 소스 합산)
 
@@ -93,7 +94,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | CORS_WILDCARD | 2.95 | 167 | 3.48 | 3.16 | — FP 높음 |
 | INSECURE_COOKIE | 2.60 | 186 | 3.55 | 2.98 | — JS 전용, 스코프 외 |
 
-† NO_BARE_EXCEPT: extract_vulns.py 스코프 외. SLAyer AST 탐지 독립 운용, 빈도점수 3.00(추정) 적용.
+† NO_BARE_EXCEPT: 데이터 수집 스코프 외. SLAyer AST 탐지 독립 운용, 빈도점수 3.00(추정) 적용.
 
 ### 벤치마크 데이터셋
 
@@ -113,7 +114,7 @@ slayer model             # AI CLI 상태 확인 / 선호 모델 설정
 | 패턴 원인 | 설명 |
 |----------|------|
 | "일단 동작하게" 프롬프트 | 기능 구현 우선, 보안 컨텍스트 없음 |
-| 오래된 튜토리얼 데이터 | f-string SQL, MD5 해싱 등 구식 패턴이 훈련 데이터에 많음 |
+| 오래된 튜토리얼 데이터 | f-string SQL, `Math.random()` 토큰 등 구식 패턴이 훈련 데이터에 많음 |
 | 개발 예제 그대로 배포 | `DEBUG=True`, 하드코딩 크레덴셜을 교체 안 함 |
 | 에러 제거 요청 | `except: pass` — "에러 없애줘" 프롬프트 결과 |
 
@@ -165,8 +166,7 @@ slayer/
 │   └── patcher/
 │       └── llm_patcher.py   # 자동 패치 (AI CLI 위임, 언어 자동 감지)
 ├── pyproject.toml
-├── demo_vuln.py             # Python 데모
-├── demo_vuln.js             # JS 데모
+├── dataset/slayer-bench-v0/ # 데모와 벤치마크 케이스
 └── spec.md
 ```
 
@@ -259,12 +259,11 @@ slayer model auto           # 자동 감지 (기본값)으로 초기화
 ### text 형식 (기본)
 
 ```
-SLAyer  Scanning demo_vuln.py
+SLAyer  Scanning dataset/slayer-bench-v0/vulnerable/python/py_secret_exec_sql.py
 
-✗  NO_HARDCODED_SECRETS  demo_vuln.py:5   API_KEY = "sk-prod-..."
-✗  NO_NETWORK            demo_vuln.py:9   requests.get(...)
-✗  SQL_PARAM_BINDING     demo_vuln.py:13  f"SELECT * FROM ..."
-✗  NO_EXEC               demo_vuln.py:17  subprocess.run(..., shell=True)
+✗  NO_HARDCODED_SECRETS  py_secret_exec_sql.py:3   API_KEY = "sk-prod-..."
+✗  SQL_PARAM_BINDING     py_secret_exec_sql.py:7   f"SELECT * FROM ..."
+✗  NO_EXEC               py_secret_exec_sql.py:11  subprocess.run(..., shell=True)
 
 Deployment BLOCKED
 ```
@@ -275,13 +274,13 @@ Deployment BLOCKED
 {
   "violations": [
     {
-      "rule_id": "rule_1",
-      "rule_name": "외부 네트워크 호출 없음",
-      "file": "/abs/path/demo_vuln.py",
-      "line": 9,
+      "rule_id": "NO_HARDCODED_SECRETS",
+      "rule_name": "NO_HARDCODED_SECRETS",
+      "file": "/abs/path/py_secret_exec_sql.py",
+      "line": 3,
       "col": 0,
-      "code_snippet": "    return requests.get(...)",
-      "explanation": "외부 서버로 데이터를 보내는 코드예요."
+      "code_snippet": "API_KEY = \"sk-prod-...\"",
+      "explanation": "비밀번호나 API 키를 코드에 직접 넣으면 저장소가 노출될 때 인증 정보가 바로 악용됩니다."
     }
   ],
   "pass_count": 0,
@@ -371,13 +370,13 @@ AI CLI에 파일 내용 + SLAyer가 탐지한 위반 목록을 전달해 수정�
 | 언어 | 검증 | 실패 시 |
 |------|------|---------|
 | Python | `ast.parse()` | 원본 복원 |
-| JS/TS | `node --check` | 원본 복원 |
+| JS | `node --check` | 원본 복원 |
+| TS/TSX | `tsc --noEmit` 가능 시 실행 | 실패 시 원본 복원 |
 
 ### rollback 조건
 1. AI CLI exit code ≠ 0
 2. Python: `ast.parse()` 실패
-3. JS/TS: diff 변경 라인 > 원본 × 0.2
-4. 타임아웃 (60초)
+3. 60초 타임아웃
 
 ---
 
@@ -385,7 +384,7 @@ AI CLI에 파일 내용 + SLAyer가 탐지한 위반 목록을 전달해 수정�
 
 ### AC-01 — start: 스캔 출력
 ```
-Given: slayer start demo_vuln.py
+Given: slayer start dataset/slayer-bench-v0/vulnerable/python/py_secret_exec_sql.py
 Then:  위반 목록 "✗ RULE_TYPE  file:line  snippet" 형식 출력
        violations > 0 → exit 1, violations = 0 → exit 0
 ```
@@ -393,18 +392,18 @@ Then:  위반 목록 "✗ RULE_TYPE  file:line  snippet" 형식 출력
 ### AC-02 — start: 파일 없는 디렉토리
 ```
 Given: 대상 파일 없는 디렉토리
-Then:  "No files found" 출력, exit 0
+Then:  "No supported source files found" 출력, exit 0
 ```
 
 ### AC-03 — start: JSON 출력
 ```
-Given: slayer start demo_vuln.py --format json
+Given: slayer start dataset/slayer-bench-v0/vulnerable/python/py_secret_exec_sql.py --format json
 Then:  파싱 가능한 JSON, violations[]/pass_count/fail_count/deployable 포함
 ```
 
 ### AC-04 — patch: 자동 패치
 ```
-Given: slayer patch demo_vuln.py (AI CLI 설치 환경)
+Given: 벤치마크 취약 파일을 임시 디렉토리에 복사 후 slayer patch <tmp>/app.py 실행 (AI CLI 설치 환경)
 Then:  "Patching via {ai_name}..." 출력
        재스캔 후 violations=0 → "🚀 Deployment Approved", exit 0
        잔여 violations → 목록 출력, exit 1
@@ -412,7 +411,7 @@ Then:  "Patching via {ai_name}..." 출력
 
 ### AC-05 — patch: JSON 출력
 ```
-Given: slayer patch demo_vuln.py --format json
+Given: 임시 복사본 대상 slayer patch <tmp>/app.py --format json
 Then:  patched_files/diffs/remaining_violations/deployable/ai_used 포함 JSON
 ```
 
@@ -445,16 +444,19 @@ Then:  vulnerable/ 전부 BLOCKED
 # 설치
 pip install -e ".[dev]"
 
+# 데모 파일 준비
+tmp="$(mktemp -d)"
+cp dataset/slayer-bench-v0/vulnerable/python/py_secret_exec_sql.py "$tmp/app.py"
+
 # 스캔
-slayer start demo_vuln.py
-# ✗  NO_HARDCODED_SECRETS  demo_vuln.py:5   API_KEY = "sk-prod-..."
-# ✗  NO_NETWORK            demo_vuln.py:9   requests.get(...)
-# ✗  SQL_PARAM_BINDING     demo_vuln.py:13  f"SELECT * FROM ..."
-# ✗  NO_EXEC               demo_vuln.py:17  subprocess.run(..., shell=True)
+slayer start "$tmp/app.py"
+# ✗  NO_HARDCODED_SECRETS  app.py:3   API_KEY = "sk-prod-..."
+# ✗  SQL_PARAM_BINDING     app.py:7   f"SELECT * FROM ..."
+# ✗  NO_EXEC               app.py:11  subprocess.run(..., shell=True)
 # Deployment BLOCKED
 
 # 자동 패치
-slayer patch demo_vuln.py
+slayer patch "$tmp/app.py"
 # Patching via claude...
 # 🚀 Deployment Approved
 

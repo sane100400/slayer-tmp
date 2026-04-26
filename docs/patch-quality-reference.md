@@ -41,8 +41,8 @@ uses these pre-patch gates:
    calls is a patch candidate; ordinary strings mentioning SQL are not.
 6. **Debug findings are hard-coded deployment defaults.** `debug=True`, `DEBUG=True`, and JS
    `debug: true` are patch candidates; environment-derived flags are not.
-7. **Weak hash findings are MD5/SHA1 security use.** Prefer findings tied to password, token,
-   credential, or authentication context to avoid changing non-security checksums.
+7. **Weak random findings are predictable randomness in security contexts.** Prefer findings tied
+   to password reset tokens, sessions, OTPs, or auth flows. Avoid changing non-security randomness.
 8. **Bare exception findings should swallow errors.** Empty handlers and `pass`/empty `catch` blocks
    are patch candidates; handlers that log, raise, return an explicit failure, or narrow exceptions
    should not be patched.
@@ -62,7 +62,7 @@ Recommended item shape:
 
 ```json
 {
-  "file": "/abs/path/demo_vuln.py",
+  "file": "/abs/path/app.py",
   "rule_id": "SQL_PARAM_BINDING",
   "rule_name": "SQL_PARAM_BINDING",
   "line": 13,
@@ -94,6 +94,7 @@ These are intentionally documentation/reference items rather than required depen
   debug failed patch attempts without storing secret-bearing prompts.
 - **Benchmark command:** keep `dataset/slayer-bench-v0/{vulnerable,fixed,false_positive}` as the
   regression fixture for AC-08: vulnerable files block, fixed and false-positive files approve.
+  Copy vulnerable examples to a temporary directory before running patch demos.
 - **Reference links in UI:** link each rule card to the relevant `spec.md` section and this file so
   non-security users can understand why a patch was made.
 
