@@ -18,8 +18,8 @@ PROVIDER_PATTERNS = (
 PLACEHOLDER_WORDS = {"example", "dummy", "test", "changeme", "your_api_key", "xxxxx", "sample", "placeholder"}
 NETWORK_RE = re.compile(r'\b(fetch|axios\.(?:get|post|put|delete|patch)|http\.(?:get|request)|https\.(?:get|request))\s*\(')
 EXEC_RE = re.compile(r'\b(?:child_process\.)?(?:exec|execSync|spawnSync)\s*\(')
-SQL_TEMPLATE_RE = re.compile(r'`[^`]*(SELECT|INSERT|UPDATE|DELETE|DROP)[^`]*\$\{', re.IGNORECASE)
-SQL_CONCAT_RE = re.compile(r'(?i)(SELECT|INSERT|UPDATE|DELETE|DROP).*(?:\+|concat\()')
+SQL_TEMPLATE_RE = re.compile(r'`[^`]*\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b[^`]*\$\{', re.IGNORECASE)
+SQL_CONCAT_RE = re.compile(r'(?i)\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b.*(?:\+|concat\()')
 DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b')
 WEAK_RANDOM_RE = re.compile(r'Math\.random\s*\(')
 EMPTY_CATCH_RE = re.compile(r'catch\s*\([^)]*\)\s*\{\s*\}', re.MULTILINE)
