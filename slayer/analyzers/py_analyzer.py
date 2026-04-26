@@ -6,6 +6,7 @@ from pathlib import Path
 
 from slayer.artifact_store import RuntimeArtifactBundle
 from slayer.models import SLARule, SyntaxIssue, Violation
+from slayer.redaction import mask_text
 from slayer.rules import DEFAULT_RULES_BY_ID
 
 SQL_KEYWORDS = re.compile(r'(?i)\b(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|UNION)\b')
@@ -57,7 +58,7 @@ def _violation(rule: SLARule, path: Path, lineno: int, lines: list[str], explana
         rule_name=rule.name,
         file=str(path.resolve()),
         line=lineno,
-        code_snippet=_snippet(lines, lineno),
+        code_snippet=mask_text(_snippet(lines, lineno)),
         explanation=explanation or rule.description,
     )
 

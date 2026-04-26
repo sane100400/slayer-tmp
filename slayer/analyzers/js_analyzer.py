@@ -5,6 +5,7 @@ from pathlib import Path
 
 from slayer.artifact_store import RuntimeArtifactBundle
 from slayer.models import Violation
+from slayer.redaction import mask_text
 from slayer.rules import DEFAULT_RULES_BY_ID
 
 SECRET_ASSIGN_RE = re.compile(
@@ -43,7 +44,7 @@ def _violation(rule_id: str, path: Path, lineno: int, lines: list[str]) -> Viola
         rule_name=rule.name,
         file=str(path.resolve()),
         line=lineno,
-        code_snippet=_snippet(lines, lineno),
+        code_snippet=mask_text(_snippet(lines, lineno)),
         explanation=rule.description,
     )
 

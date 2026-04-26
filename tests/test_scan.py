@@ -105,3 +105,29 @@ def test_start_empty_directory_reports_no_supported_files(tmp_path):
     result = runner.invoke(app, ['start', str(tmp_path)])
     assert result.exit_code == 0
     assert 'No supported source files found' in result.stdout
+
+def test_start_masks_secret_values_in_json_output(tmp_path):
+    secret = 'sk-prod-abc123secretkey9999'
+    vulnerable = tmp_path / 'secret.py'
+    vulnerable.write_text(f'API_KEY = "{secret}"\n', encoding='utf-8')
+
+    result = runner.invoke(app, ['start', str(vulnerable), '--format', 'json'])
+
+    assert result.exit_code == 1
+    assert secret not in result.stdout
+    payload = json.loads(result.stdout)
+    assert payload['violations'][0]['rule_name'] == 'NO_HARDCODED_SECRETS'
+    assert '...' in payload['violations'][0]['code_snippet'] or 'REDACTED' in payload['violations'][0]['code_snippet']
+
+
+def test_start_blocks_deploy_on_syntax_errors_only(tmp_path):
+    broken = tmp_path / 'broken.py'
+    broken.write_text('def nope(:\n    pass\n', encoding='utf-8')
+
+    result = runner.invoke(app, ['start', str(tmp_path), '--format', 'json'])
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 1
+    assert payload['deployable'] is False
+    assert payload['violations'] == []
+    assert payload['syntax_errors']

@@ -8,6 +8,7 @@ import typer
 from rich.console import Console
 
 from slayer.ai_runner import AICliError, AI_CANDIDATES, _is_available, detect_ai_cli, AICliNotFoundError
+from slayer.models import AIChoice
 from slayer.artifact_store import DEFAULT_ARTIFACT_VERSION
 from slayer.patcher.llm_patcher import patch_path
 from slayer.reporter import render_json, render_patch_text, render_scan_text
@@ -71,7 +72,7 @@ def start(
         console.print(f'[red]Scan failed:[/red] {exc}')
         raise typer.Exit(code=2)
     _print_scan(target, result, output_format)
-    raise typer.Exit(code=1 if result.violations else 0)
+    raise typer.Exit(code=1 if not result.deployable else 0)
 
 
 @app.command()
@@ -79,8 +80,9 @@ def patch(
     path: str = typer.Argument('.', help='Target file or directory'),
     output_format: OutputFormatEnum = typer.Option(OutputFormatEnum.text, '--format', help='Output format'),
     artifact_version: str = typer.Option(DEFAULT_ARTIFACT_VERSION, '--artifact-version', help='Runtime artifact bundle version'),
+    ai: AIChoice | None = typer.Option(None, '--ai', help='AI CLI for this run: auto | claude | codex | gemini'),
 ) -> None:
-    selected_ai = _read_saved_ai() or 'auto'
+    selected_ai: AIChoice = ai or _read_saved_ai() or 'auto'
     target = Path(path)
     try:
         result = patch_path(target, selected_ai=selected_ai, artifact_version=artifact_version)
@@ -91,7 +93,7 @@ def patch(
         console.print(f'[red]Patch failed:[/red] {exc}')
         raise typer.Exit(code=2)
     _print_patch(target, result, output_format)
-    raise typer.Exit(code=1 if result.remaining_violations else 0)
+    raise typer.Exit(code=1 if not result.deployable else 0)
 
 
 @app.command()
