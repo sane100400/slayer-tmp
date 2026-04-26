@@ -104,21 +104,24 @@ slayer/
 AI_CANDIDATES = [
     {
         "name": "claude",
-        "check": ["claude", "--version"],
+        "check": ["claude", "--version"],   # exit 0 + stdout 포함이면 사용 가능
         "run": lambda prompt: ["claude", "-p", prompt],
     },
     {
         "name": "codex",
-        "check": ["codex", "--version"],
+        "check": ["codex", "--version"],    # exit 0이면 사용 가능
         "run": lambda prompt: ["codex", "exec", prompt],
     },
     {
         "name": "gemini",
-        "check": ["gemini", "--version"],
+        "check": ["gemini", "--version"],   # exit 0이면 사용 가능
         "run": lambda prompt: ["gemini", prompt],
     },
 ]
 ```
+
+**감지 성공 조건**: `check` 명령 실행 시 exit code = 0. stdout/stderr 내용 무관.
+**감지 실패 조건**: `check` 명령이 FileNotFoundError (미설치) 또는 exit code ≠ 0.
 
 ### `ai_runner.py` 인터페이스
 
@@ -183,10 +186,10 @@ slayer start <path>
 - stdout이 TTY가 아니면 자동으로 plain 텍스트 출력 (CI 모드)
 - path 생략 시 현재 디렉토리 (`.`)
 
-**Exit codes:**
-- `0` — 모든 룰 통과
-- `1` — 위반 존재
-- `2` — 오류
+**Exit codes (두 명령 공통):**
+- `0` — 스캔 완료, violations 없음 (Deployment Approved)
+- `1` — 스캔 완료, violations 존재 (Deployment BLOCKED)
+- `2` — 실행 오류 (파일 읽기 실패, AI CLI 실행 실패 등)
 
 ### 3-2. slayer patch
 
@@ -488,7 +491,7 @@ Given: `slayer start demo_vuln.py | cat` (stdout≠TTY)
 When:  명령어 완료
 Then:  TUI 없이 plain text 출력
        위반 목록이 "✗ RULE_TYPE  file:line  snippet" 형식으로 출력된다
-       exit code 1
+       violations > 0이면 exit code 1, violations = 0이면 exit code 0
 ```
 
 ### AC-03 — start: .py 없는 디렉토리
@@ -701,4 +704,9 @@ dependencies = [
 dev = ["pytest", "pytest-asyncio"]
 ```
 
-`anthropic` SDK 의존성 없음 — AI 호출은 로컬 CLI 프로세스로 위임.
+**서드파티 의존성**: textual, pydantic, typer, rich만. AI SDK 없음.
+**표준 라이브러리 사용** (별도 설치 불필요): `ast`, `re`, `os`, `json`, `pathlib`, `shutil`
+- AI CLI 실행: `os` 내 child process 실행 기능 사용
+- AST 분석: `ast`
+- 정규식 스캔: `re`
+- JSON 출력: `json`
