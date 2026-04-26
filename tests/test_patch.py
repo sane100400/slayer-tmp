@@ -45,12 +45,13 @@ def test_patch_uses_explicit_ai_selection_and_rescans_clean(tmp_path, fake_ai_en
     assert result.ai_used == 'codex'
     assert result.deployable is True
     assert result.remaining_violations == []
-    assert {item.rule_id for item in result.patch_explanations} == {
+    assert [item.rule_name for item in result.patch_explanations] == [
         'NO_HARDCODED_SECRETS',
         'SQL_PARAM_BINDING',
         'NO_EXEC',
-    }
-    assert all(item.summary for item in result.patch_explanations)
+    ]
+    assert result.patch_explanations[0].title
+    assert 'spec.md' in result.patch_explanations[0].reference
     assert 'os.environ.get' in target.read_text(encoding='utf-8')
     assert str(target.resolve()) in result.diffs
 
@@ -84,10 +85,11 @@ def test_patch_cli_json_output(tmp_path, fake_ai_env, monkeypatch):
     assert result.exit_code == 0
     assert payload['deployable'] is True
     assert payload['ai_used'] == 'codex'
-    assert payload['patch_explanations'][0]['rule_id'] == 'NO_HARDCODED_SECRETS'
+    assert payload['patch_explanations'][0]['rule_name'] == 'NO_HARDCODED_SECRETS'
+    assert '비밀값' in payload['patch_explanations'][0]['title']
 
 
-def test_patch_text_output_includes_friendly_explanation(tmp_path, fake_ai_env, monkeypatch):
+def test_patch_cli_text_output_includes_friendly_explanations(tmp_path, fake_ai_env, monkeypatch):
     target = tmp_path / 'demo.py'
     target.write_text('API_KEY = "sk-prod-abc123secretkey9999"\n', encoding='utf-8')
     (tmp_path / '.slayer.yml').write_text('ai: codex\n', encoding='utf-8')
@@ -97,6 +99,7 @@ def test_patch_text_output_includes_friendly_explanation(tmp_path, fake_ai_env, 
     result = runner.invoke(app, ['patch', str(target)])
 
     assert result.exit_code == 0
+    assert 'Patch explanations:' in result.stdout
     assert 'NO_HARDCODED_SECRETS' in result.stdout
     assert '비밀값을 코드 밖으로 옮겼어요' in result.stdout
 

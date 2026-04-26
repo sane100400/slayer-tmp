@@ -62,8 +62,7 @@ class PatchExplanation(BaseModel):
     line: int
     title: str
     summary: str
-    guidance: str
-    reference: str = "spec.md"
+    reference: str
 
 
 class PatchResult(BaseModel):

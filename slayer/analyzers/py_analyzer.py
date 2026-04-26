@@ -51,9 +51,9 @@ EXEC_CALLS = {
     'os.execve',
     'os.execvp',
 }
-SECURITY_CONTEXT_WORDS = ('token', 'secret', 'password', 'passwd', 'pwd', 'session', 'otp', 'auth', 'reset', 'csrf', 'credential')
-INSECURE_HASH_NAMES = {'md5', 'sha1'}
+SECURITY_CONTEXT_WORDS = ('token', 'secret', 'password', 'session', 'otp', 'auth', 'reset', 'csrf')
 INSECURE_HASH_CALLS = {'hashlib.md5', 'hashlib.sha1', 'md5', 'sha1'}
+INSECURE_HASH_NAMES = {'md5', 'sha1'}
 
 
 def _snippet(lines: list[str], lineno: int) -> str:
@@ -173,6 +173,18 @@ def _sql_call_has_binding_issue(node: ast.Call) -> bool:
     return False
 
 
+def _insecure_hash_name(node: ast.Call) -> str:
+    dotted = _dotted_name(node.func)
+    if dotted in INSECURE_HASH_CALLS:
+        return dotted.rsplit('.', 1)[-1]
+    if isinstance(node.func, ast.Attribute) and node.func.attr == 'new':
+        if node.args and isinstance(node.args[0], ast.Constant):
+            value = str(node.args[0].value).lower()
+            if value in INSECURE_HASH_NAMES:
+                return value
+    return ''
+
+
 def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]]:
     lines = source.splitlines()
     rules = DEFAULT_RULES_BY_ID
@@ -224,8 +236,17 @@ def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]
             if isinstance(node.func, ast.Attribute) and node.func.attr in {'execute', 'executemany'} and _sql_call_has_binding_issue(node):
                 violations.append(_violation(rules['SQL_PARAM_BINDING'], path, lineno, lines))
 
-            if _has_insecure_hash_issue(node, parents, line):
-                violations.append(_violation(rules['NO_INSECURE_HASH'], path, lineno, lines))
+            insecure_hash = _insecure_hash_name(node)
+            if insecure_hash and _has_security_context(node, parents, line):
+                violations.append(
+                    _violation(
+                        rules['NO_INSECURE_HASH'],
+                        path,
+                        lineno,
+                        lines,
+                        f"{rules['NO_INSECURE_HASH'].description} ({insecure_hash.upper()} 사용)",
+                    )
+                )
 
             if _call_name(node) == 'run' and any(
                 kw.arg == 'debug' and isinstance(kw.value, ast.Constant) and kw.value.value is True for kw in node.keywords
@@ -240,7 +261,8 @@ def analyze(path: Path, source: str) -> tuple[list[Violation], list[SyntaxIssue]
 
         if isinstance(node, ast.ExceptHandler):
             broad_exception = node.type is None or (isinstance(node.type, ast.Name) and node.type.id == 'Exception')
-            if broad_exception and _body_is_empty_or_pass(node.body):
+            broad_exception = broad_exception and _body_is_empty_or_pass(node.body)
+            if broad_exception:
                 violations.append(_violation(rules['NO_BARE_EXCEPT'], path, lineno, lines))
 
     return violations, syntax_issues

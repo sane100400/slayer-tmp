@@ -26,8 +26,8 @@ EXEC_IMPORT_ESM_RE = re.compile(r'import\s*\{(?P<names>[^}]+)\}\s*from\s*[\"\']c
 EXEC_NAMES = {'exec', 'execSync', 'spawnSync'}
 SQL_TEMPLATE_RE = re.compile(r'`[^`]*(SELECT|INSERT|UPDATE|DELETE|DROP)[^`]*\$\{', re.IGNORECASE)
 SQL_CONCAT_RE = re.compile(r'(?i)(SELECT|INSERT|UPDATE|DELETE|DROP).*(?:\+|concat\()')
-DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bdebug\s*=\s*true\b')
-INSECURE_HASH_RE = re.compile(r'createHash\(\s*[\"\'](?:md5|sha1)[\"\']\s*\)', re.IGNORECASE)
+DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b')
+INSECURE_HASH_RE = re.compile(r'createHash\s*\(\s*["\'](?P<hash>md5|sha1)["\']\s*\)', re.IGNORECASE)
 EMPTY_CATCH_RE = re.compile(r'catch\s*\([^)]*\)\s*\{\s*\}', re.MULTILINE)
 SECURITY_CONTEXT_WORDS = ("token", "secret", "password", "passwd", "pwd", "session", "otp", "auth", "reset", "csrf", "credential")
 SQL_CONTEXT_WORDS = ("sql", "query", "db.", "database", "execute")
@@ -78,34 +78,11 @@ def _line_number(source: str, index: int) -> int:
     return source.count('\n', 0, index) + 1
 
 
-def _has_security_context(line: str) -> bool:
-    lowered = line.lower()
-    return any(word in lowered for word in SECURITY_CONTEXT_WORDS)
-
-
-def _has_sql_context(line: str) -> bool:
-    lowered = line.lower()
-    return any(word in lowered for word in SQL_CONTEXT_WORDS)
-
-
-def _imported_child_process_exec_names(source: str) -> set[str]:
-    names: set[str] = set()
-    for pattern in (EXEC_IMPORT_RE, EXEC_IMPORT_ESM_RE):
-        for match in pattern.finditer(source):
-            for raw_name in match.group('names').split(','):
-                alias_separator = ' as ' if ' as ' in raw_name else ':'
-                parts = [part.strip() for part in raw_name.strip().split(alias_separator, 1)]
-                name = parts[0]
-                local_name = parts[-1]
-                if name in EXEC_NAMES:
-                    names.add(local_name)
-    return names
-
-
-def _has_exec_violation(line: str, imported_exec_names: set[str]) -> bool:
-    if EXEC_DIRECT_RE.search(line):
-        return True
-    return any(re.search(rf'(?<![\w$.]){re.escape(name)}\s*\(', line) for name in imported_exec_names)
+def _has_security_context(lines: list[str], index: int) -> bool:
+    start = max(0, index - 2)
+    end = min(len(lines), index + 2)
+    haystack = '\n'.join(lines[start:end]).lower()
+    return any(word in haystack for word in SECURITY_CONTEXT_WORDS)
 
 
 def analyze(path: Path, source: str) -> list[Violation]:
@@ -140,7 +117,7 @@ def analyze(path: Path, source: str) -> list[Violation]:
         if DEBUG_RE.search(line):
             violations.append(_violation('NO_DEBUG_MODE', path, lineno, lines))
 
-        if INSECURE_HASH_RE.search(line) and _has_security_context(line):
+        if INSECURE_HASH_RE.search(line) and _has_security_context(lines, lineno - 1):
             violations.append(_violation('NO_INSECURE_HASH', path, lineno, lines))
 
     for match in EMPTY_CATCH_RE.finditer(source):

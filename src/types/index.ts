@@ -37,10 +37,21 @@ export interface ScanResult {
   deployable: boolean;
 }
 
+export interface PatchExplanation {
+  file: string;
+  rule_id: string;
+  rule_name: string;
+  line: number;
+  title: string;
+  summary: string;
+  reference: string;
+}
+
 export interface PatchResult {
   original_code: string;
   patched_code: string;
   diff: string;
+  patch_explanations: PatchExplanation[];
   remaining_violations: Violation[];
   deployable: boolean;
   ai_used: string;

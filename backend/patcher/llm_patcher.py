@@ -10,6 +10,7 @@ except ImportError:
     from models import AIChoice, PatchExplanation, SLARule, Violation, PatchResult
 
 from slayer.ai_runner import AICliError, extract_code, run_ai
+from slayer.patch_explanations import build_patch_explanations
 from slayer.patcher.llm_patcher import PatchValidationError, validate_syntax
 from slayer.rules import PATCH_EXPLANATION_TEMPLATES, RULE_GUIDANCE, canonical_rule_id
 
@@ -138,6 +139,13 @@ async def patch(
         original_code=code,
         patched_code=patched,
         diff=_unified_diff(code, patched),
+        patch_explanations=[
+            item.model_dump()
+            for item in build_patch_explanations(
+                violations,
+                {rule.id: rule for rule in rules},
+            )
+        ],
         remaining_violations=[],
         deployable=True,
         ai_used=candidate.name,

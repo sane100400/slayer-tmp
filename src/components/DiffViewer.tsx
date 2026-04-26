@@ -19,21 +19,20 @@ export function DiffViewer({ diff, explanations = [] }: Props) {
   return (
     <div className="overflow-auto h-full bg-gray-950">
       {explanations.length > 0 && (
-        <div className="bg-gray-900 border-b border-gray-800 p-4 grid gap-3">
-          {explanations.map((explanation, index) => (
-            <div key={`${explanation.file}-${explanation.rule_id}-${explanation.line}-${index}`} className="rounded-xl bg-gray-800/80 border border-gray-700 p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200">
-                  {explanation.rule_name}
-                </span>
-                <span className="text-[11px] text-gray-400">
-                  {explanation.file.split(/[\\/]/).pop()}:{explanation.line}
-                </span>
+        <div className="border-b border-gray-800 bg-gray-900 p-4">
+          <p className="text-xs font-semibold text-amber-300 mb-2">패치 설명</p>
+          <div className="flex flex-col gap-2">
+            {explanations.map((item, i) => (
+              <div key={`${item.file}-${item.line}-${item.rule_id}-${i}`} className="rounded-lg bg-gray-950/70 p-3">
+                <p className="text-sm font-semibold text-gray-100">
+                  {item.rule_name} · {item.file.split("/").pop()}:{item.line}
+                </p>
+                <p className="text-xs text-gray-300 mt-1">{item.title}</p>
+                <p className="text-xs text-gray-400 mt-1 leading-relaxed">{item.summary}</p>
+                <p className="text-[11px] text-gray-500 mt-1">{item.reference}</p>
               </div>
-              <p className="text-sm font-semibold text-gray-100">{explanation.title}</p>
-              <p className="text-xs text-gray-300 mt-1 leading-relaxed">{explanation.summary}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
       <div className="font-mono text-xs leading-6">

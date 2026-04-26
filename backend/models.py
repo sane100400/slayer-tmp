@@ -67,14 +67,14 @@ class PatchExplanation(BaseModel):
     line: int
     title: str
     summary: str
-    guidance: str
-    reference: str = "spec.md"
+    reference: str
 
 
 class PatchResult(BaseModel):
     original_code: str
     patched_code: str
     diff: str
+    patch_explanations: List[PatchExplanation] = Field(default_factory=list)
     remaining_violations: List[Violation]
     deployable: bool
     ai_used: str = "none"
