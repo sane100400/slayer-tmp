@@ -22,13 +22,13 @@ def load_config(config_path: str) -> Dict[str, Any]:
     try:
         with open(config_path, 'r') as f:
             config = json.load(f)
-        logger.info(f"✅ Loaded config from {config_path}")
+        logger.info(f"Loaded config from {config_path}")
         return config
     except FileNotFoundError:
-        logger.error(f"❌ Config file not found: {config_path}")
+        logger.error(f"Config file not found: {config_path}")
         sys.exit(1)
     except json.JSONDecodeError as e:
-        logger.error(f"❌ Invalid JSON in config: {e}")
+        logger.error(f"Invalid JSON in config: {e}")
         sys.exit(1)
 
 
@@ -39,7 +39,7 @@ def fetch_from_api(api_url: str, api_key: Optional[str] = None, timeout: int = 3
         headers['Authorization'] = f'Bearer {api_key}'
     
     try:
-        logger.info(f"🌐 Fetching from {api_url}...")
+        logger.info(f"Fetching from {api_url}...")
         response = requests.get(api_url, headers=headers, timeout=timeout)
         response.raise_for_status()
         
@@ -53,10 +53,10 @@ def fetch_from_api(api_url: str, api_key: Optional[str] = None, timeout: int = 3
         if not isinstance(data, list):
             data = [data]
         
-        logger.info(f"✅ Fetched {len(data)} records")
+        logger.info(f"Fetched {len(data)} records")
         return data
     except requests.RequestException as e:
-        logger.error(f"❌ API request failed: {e}")
+        logger.error(f"API request failed: {e}")
         sys.exit(1)
 
 
@@ -84,7 +84,7 @@ def apply_filters(data: List[Dict], filters: Optional[Dict[str, Any]]) -> List[D
         else:
             filtered = [r for r in filtered if r.get(key) == value]
     
-    logger.info(f"📊 Applied filters: {len(data)} → {len(filtered)} records")
+    logger.info(f"Applied filters: {len(data)} -> {len(filtered)} records")
     return filtered
 
 
@@ -98,7 +98,7 @@ def transform_with_subprocess(data: List[Dict], transform_cmd: str, data_field: 
             input_text = record.get(data_field, '')
             
             # Run transformation command
-            logger.info(f"🔄 Processing record {i+1}/{len(data)}...")
+            logger.info(f"Processing record {i+1}/{len(data)}...")
             result = subprocess.run(
                 transform_cmd,
                 input=input_text.encode('utf-8'),
@@ -108,19 +108,19 @@ def transform_with_subprocess(data: List[Dict], transform_cmd: str, data_field: 
             )
             
             if result.returncode != 0:
-                logger.warning(f"⚠️  Subprocess returned {result.returncode}: {result.stderr.decode()}")
+                logger.warning(f"Warning: Subprocess returned {result.returncode}: {result.stderr.decode()}")
                 transformed.append(record)
             else:
                 record['transformed_content'] = result.stdout.decode('utf-8').strip()
                 transformed.append(record)
         except subprocess.TimeoutExpired:
-            logger.warning(f"⚠️  Subprocess timeout for record {i+1}")
+            logger.warning(f"Warning: Subprocess timeout for record {i+1}")
             transformed.append(record)
         except Exception as e:
-            logger.warning(f"⚠️  Subprocess error: {e}")
+            logger.warning(f"Warning: Subprocess error: {e}")
             transformed.append(record)
     
-    logger.info(f"✅ Transformation complete")
+    logger.info(f"Transformation complete")
     return transformed
 
 
@@ -132,7 +132,7 @@ def initialize_database(db_path: str, schema: Optional[List[str]] = None) -> sql
     if schema:
         for sql in schema:
             cursor.execute(sql)
-            logger.info(f"✅ Created table")
+            logger.info(f"Created table")
     else:
         # Default schema if none provided
         cursor.execute('''
@@ -173,10 +173,10 @@ def store_in_database(
             
             stored_count += 1
         except Exception as e:
-            logger.warning(f"⚠️  Failed to store record: {e}")
+            logger.warning(f"Warning: Failed to store record: {e}")
     
     conn.commit()
-    logger.info(f"💾 Stored {stored_count}/{len(data)} records in {table_name}")
+    logger.info(f"Stored {stored_count}/{len(data)} records in {table_name}")
     return stored_count
 
 
@@ -189,7 +189,7 @@ def main():
     args = parser.parse_args()
     
     logger.info("=" * 60)
-    logger.info("🚀 DATA PIPELINE STARTED")
+    logger.info("DATA PIPELINE STARTED")
     logger.info("=" * 60)
     
     # Load configuration
@@ -199,7 +199,7 @@ def main():
     api_url = config.get('api_url')
     api_key = config.get('api_key')
     if not api_url:
-        logger.error("❌ api_url not found in config")
+        logger.error("api_url not found in config")
         sys.exit(1)
     
     data = fetch_from_api(api_url, api_key)
@@ -217,7 +217,7 @@ def main():
         )
     
     if args.dry_run:
-        logger.info("🧪 DRY RUN - no database writes")
+        logger.info("DRY RUN - no database writes")
         logger.info(f"Would store {len(data)} records")
         return
     
@@ -232,7 +232,7 @@ def main():
     db_conn.close()
     
     logger.info("=" * 60)
-    logger.info(f"✅ PIPELINE COMPLETE - {len(data)} records processed")
+    logger.info(f"PIPELINE COMPLETE - {len(data)} records processed")
     logger.info("=" * 60)
 
 

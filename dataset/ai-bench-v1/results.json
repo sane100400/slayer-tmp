@@ -74,7 +74,7 @@
       {
         "rule": "NO_NETWORK",
         "line": 43,
-        "reason": "Indirect variable: requests.get(api_url) — scanner only flags f-string/subscript/request-attribute URLs by design"
+        "reason": "Indirect variable: requests.get(api_url) - scanner only flags f-string/subscript/request-attribute URLs by design"
       }
     ]
   },
