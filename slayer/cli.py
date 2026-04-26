@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-import sys
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
 
-from slayer.ai_runner import AICliError
+from slayer.ai_runner import AICliError, AI_CANDIDATES, _is_available, detect_ai_cli, AICliNotFoundError
 from slayer.patcher.llm_patcher import patch_path
 from slayer.reporter import render_json, render_patch_text, render_scan_text
 from slayer.scanner import scan_path
-from slayer.tui import SLayerTUI
 
 app = typer.Typer(add_completion=False, help='SLAyer security scanner and patcher')
 console = Console(stderr=True)
+
+_CONFIG_FILE = Path('.slayer.yml')
 
 
 class OutputFormatEnum(str, Enum):
@@ -22,11 +23,31 @@ class OutputFormatEnum(str, Enum):
     json = 'json'
 
 
-class AIChoiceEnum(str, Enum):
-    auto = 'auto'
-    claude = 'claude'
-    codex = 'codex'
-    gemini = 'gemini'
+def _read_saved_ai() -> str | None:
+    if not _CONFIG_FILE.exists():
+        return None
+    for line in _CONFIG_FILE.read_text().splitlines():
+        line = line.strip()
+        if line.startswith('ai:'):
+            value = line.split(':', 1)[1].strip()
+            if value in ('claude', 'codex', 'gemini', 'auto'):
+                return value
+    return None
+
+
+def _write_saved_ai(ai_name: str) -> None:
+    lines: list[str] = []
+    replaced = False
+    if _CONFIG_FILE.exists():
+        for line in _CONFIG_FILE.read_text().splitlines():
+            if line.strip().startswith('ai:'):
+                lines.append(f'ai: {ai_name}')
+                replaced = True
+            else:
+                lines.append(line)
+    if not replaced:
+        lines.append(f'ai: {ai_name}')
+    _CONFIG_FILE.write_text('\n'.join(lines) + '\n')
 
 
 def _print_scan(target: Path, result, output_format: OutputFormatEnum) -> None:
@@ -47,7 +68,6 @@ def _print_patch(target: Path, result, output_format: OutputFormatEnum) -> None:
 def start(
     path: str = typer.Argument('.', help='Target file or directory'),
     output_format: OutputFormatEnum = typer.Option(OutputFormatEnum.text, '--format', help='Output format'),
-    ai: AIChoiceEnum = typer.Option(AIChoiceEnum.auto, '--ai', help='AI CLI selection for TUI Fix All'),
 ) -> None:
     target = Path(path)
     try:
@@ -56,18 +76,7 @@ def start(
         console.print(f'[red]Scan failed:[/red] {exc}')
         raise typer.Exit(code=2)
 
-    should_launch_tui = (
-        output_format == OutputFormatEnum.text
-        and sys.stdout.isatty()
-        and bool(result.scanned_files)
-    )
-    if should_launch_tui:
-        tui = SLayerTUI(target=target, selected_ai=ai.value)
-        tui.run()
-        result = tui.scan_result
-    else:
-        _print_scan(target, result, output_format)
-
+    _print_scan(target, result, output_format)
     raise typer.Exit(code=1 if result.violations else 0)
 
 
@@ -75,11 +84,11 @@ def start(
 def patch(
     path: str = typer.Argument('.', help='Target file or directory'),
     output_format: OutputFormatEnum = typer.Option(OutputFormatEnum.text, '--format', help='Output format'),
-    ai: AIChoiceEnum = typer.Option(AIChoiceEnum.auto, '--ai', help='Patch AI CLI selection (auto|claude|codex|gemini)'),
 ) -> None:
+    selected_ai = _read_saved_ai() or 'auto'
     target = Path(path)
     try:
-        result = patch_path(target, selected_ai=ai.value)
+        result = patch_path(target, selected_ai=selected_ai)
     except AICliError as exc:
         console.print(f'[red]Patch failed:[/red] {exc}')
         raise typer.Exit(code=2)
@@ -89,6 +98,44 @@ def patch(
 
     _print_patch(target, result, output_format)
     raise typer.Exit(code=1 if result.remaining_violations else 0)
+
+
+@app.command()
+def model(
+    ai_name: Optional[str] = typer.Argument(None, help='AI CLI to use: claude | codex | gemini | auto'),
+) -> None:
+    """Show or set the AI CLI used for patching."""
+    valid = ('claude', 'codex', 'gemini', 'auto')
+
+    if ai_name is not None:
+        if ai_name not in valid:
+            console.print(f'[red]Unknown AI CLI:[/red] {ai_name!r}. Choose from: {", ".join(valid)}')
+            raise typer.Exit(code=2)
+        _write_saved_ai(ai_name)
+        console.print(f'[green]✓[/green] Saved: ai = {ai_name} → .slayer.yml')
+        return
+
+    saved = _read_saved_ai()
+    typer.echo('')
+    typer.echo('  AI CLI Status')
+    typer.echo('  ─────────────────────────────────────')
+    for candidate in AI_CANDIDATES:
+        available = _is_available(candidate)
+        mark = '[green]✓[/green]' if available else '[dim]✗[/dim]'
+        console.print(f'  {mark}  {candidate.name}')
+
+    typer.echo('')
+    if saved and saved != 'auto':
+        typer.echo(f'  Saved preference : {saved}  (from .slayer.yml)')
+    else:
+        typer.echo('  Saved preference : auto  (first available)')
+
+    try:
+        active = detect_ai_cli()
+        typer.echo(f'  Active AI CLI    : {active.name}')
+    except AICliNotFoundError:
+        typer.echo('  Active AI CLI    : none — install Claude Code / Codex / Gemini CLI')
+    typer.echo('')
 
 
 def main() -> None:

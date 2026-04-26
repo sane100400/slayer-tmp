@@ -55,9 +55,8 @@ def test_patch_cli_json_output(tmp_path, fake_ai_env, monkeypatch):
     patched_code = 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n'
     monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', patched_code)
 
-    result = runner.invoke(app, ['patch', str(target), '--format', 'json', '--ai', 'gemini'])
+    result = runner.invoke(app, ['patch', str(target), '--format', 'json'])
     payload = json.loads(result.stdout)
 
     assert result.exit_code == 0
-    assert payload['ai_used'] == 'gemini'
     assert payload['deployable'] is True
