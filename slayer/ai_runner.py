@@ -10,14 +10,14 @@ from typing import Callable
 
 from slayer.models import AIChoice
 
-AI_INSTALL_GUIDANCE = """✗ AI CLI가 감지되지 않았습니다.
+AI_INSTALL_GUIDANCE = """AI CLI was not found.
 
-다음 중 하나를 설치하세요:
-  • Claude Code   https://claude.ai/code
-  • Codex CLI     npm install -g @openai/codex
-  • Gemini CLI    npm install -g @google/gemini-cli
+Install one of these tools:
+  - Claude Code   https://claude.ai/code
+  - Codex CLI     npm install -g @openai/codex
+  - Gemini CLI    npm install -g @google/gemini-cli
 
-AST 기반 스캔(탐지만)은 AI 없이도 동작합니다.
+AST scanning for detection works without AI.
 """
 
 CODE_BLOCK_RE = re.compile(r"```(?:[a-zA-Z0-9_+-]+)?\n(.*?)```", re.DOTALL)
@@ -29,7 +29,7 @@ class AICliError(RuntimeError):
 
 class AICliNotFoundError(AICliError):
     def __init__(self, preferred: str | None = None):
-        detail = f"선택한 AI CLI({preferred})를 찾을 수 없습니다." if preferred else "사용 가능한 AI CLI를 찾을 수 없습니다."
+        detail = f"Selected AI CLI ({preferred}) was not found." if preferred else "No supported AI CLI was found."
         super().__init__(f"{detail}\n\n{AI_INSTALL_GUIDANCE}".strip())
 
 
@@ -154,13 +154,12 @@ def run_ai(
         except FileNotFoundError as exc:
             raise AICliNotFoundError(preferred=selected.name) from exc
         except subprocess.TimeoutExpired as exc:
-            raise AICliTimeoutError(f"{selected.name} 실행이 {timeout}초 안에 끝나지 않았습니다.") from exc
+            raise AICliTimeoutError(f"{selected.name} did not finish within {timeout} seconds.") from exc
 
         if result.returncode != 0:
             stderr = (result.stderr or "").strip()
-            raise AICliExecutionError(
-                f"{selected.name} 실행이 실패했습니다 (exit={result.returncode}).{('\n' + stderr) if stderr else ''}"
-            )
+            stderr_suffix = f"\n{stderr}" if stderr else ""
+            raise AICliExecutionError(f"{selected.name} failed (exit={result.returncode}).{stderr_suffix}")
 
         output = result.stdout
         if output_file is not None and output_file.exists():

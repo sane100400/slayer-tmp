@@ -1,6 +1,6 @@
 """
-demo_vuln.py — SLAyer 데모 파일
-spec.md 기준 7대 웹서비스 취약 패턴을 담은 샘플.
+demo_vuln.py - vulnerable SLAyer demo file
+Sample with seven web service risk patterns from spec.md.
 """
 import random
 import requests
@@ -34,6 +34,6 @@ def generate_reset_token() -> str:
 
 def process_data(data):
     try:
-        return transform(data)
-    except:
+        return transform(data)  # noqa: F821 - intentionally vulnerable demo code
+    except:  # noqa: E722 - intentionally vulnerable demo code
         pass

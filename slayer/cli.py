@@ -9,7 +9,7 @@ from rich.console import Console
 
 from slayer.ai_runner import AICliError, AI_CANDIDATES, _is_available, detect_ai_cli, AICliNotFoundError
 from slayer.patcher.llm_patcher import patch_path
-from slayer.reporter import render_json, render_patch_text, render_scan_text, print_scan_rich, print_patch_rich
+from slayer.reporter import render_json, print_scan_rich, print_patch_rich
 from slayer.scanner import scan_path
 
 app = typer.Typer(add_completion=False, help='SLAyer security scanner and patcher')
@@ -45,13 +45,13 @@ def _read_saved_ai() -> str | None:
 
 def _read_required_ai() -> str:
     if not _CONFIG_FILE.exists():
-        raise SlayerConfigError('.slayer.yml에 ai 설정이 필요합니다. `slayer model codex`처럼 먼저 모델을 저장하세요.')
+        raise SlayerConfigError('.slayer.yml needs an ai setting. Run `slayer model codex` first to save a model.')
 
     value = _read_ai_value()
     if value is None:
-        raise SlayerConfigError('.slayer.yml에 ai: claude|codex|gemini|auto 설정이 필요합니다.')
+        raise SlayerConfigError('.slayer.yml needs ai: claude|codex|gemini|auto.')
     if value not in _VALID_AI_CHOICES:
-        raise SlayerConfigError(f'.slayer.yml의 ai 값이 잘못되었습니다: {value!r}. claude, codex, gemini, auto 중 하나를 사용하세요.')
+        raise SlayerConfigError(f'.slayer.yml has an invalid ai value: {value!r}. Use claude, codex, gemini, or auto.')
     return value
 
 
@@ -133,16 +133,16 @@ def model(
             console.print(f'[red]Unknown AI CLI:[/red] {ai_name!r}. Choose from: {", ".join(_VALID_AI_CHOICES)}')
             raise typer.Exit(code=2)
         _write_saved_ai(ai_name)
-        console.print(f'[green]✓[/green] Saved: ai = {ai_name} → .slayer.yml')
+        console.print(f'[green]OK[/green] Saved: ai = {ai_name} -> .slayer.yml')
         return
 
     saved = _read_saved_ai()
     typer.echo('')
     typer.echo('  AI CLI Status')
-    typer.echo('  ─────────────────────────────────────')
+    typer.echo('  -------------------------------------')
     for candidate in AI_CANDIDATES:
         available = _is_available(candidate)
-        mark = '[green]✓[/green]' if available else '[dim]✗[/dim]'
+        mark = '[green]OK[/green]' if available else '[dim]missing[/dim]'
         console.print(f'  {mark}  {candidate.name}')
 
     typer.echo('')
@@ -155,7 +155,7 @@ def model(
         active = detect_ai_cli()
         typer.echo(f'  Active AI CLI    : {active.name}')
     except AICliNotFoundError:
-        typer.echo('  Active AI CLI    : none — install Claude Code / Codex / Gemini CLI')
+        typer.echo('  Active AI CLI    : none - install Claude Code / Codex / Gemini CLI')
     typer.echo('')
 
 
