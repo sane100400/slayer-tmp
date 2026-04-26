@@ -17,7 +17,7 @@ PROVIDER_PATTERNS = (
 )
 PLACEHOLDER_WORDS = {"example", "dummy", "test", "changeme", "your_api_key", "xxxxx", "sample", "placeholder"}
 NETWORK_RE = re.compile(r'\b(fetch|axios\.(?:get|post|put|delete|patch)|http\.(?:get|request)|https\.(?:get|request))\s*\(')
-EXEC_RE = re.compile(r'\b(?:child_process\.)?(?:exec|execSync|spawnSync)\s*\(')
+EXEC_RE = re.compile(r'(?:child_process\.(?:exec|execSync|spawnSync)|(?<![.\w])(?:execSync|spawnSync|exec))\s*\(')
 SQL_TEMPLATE_RE = re.compile(r'`[^`]*\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b[^`]*\$\{', re.IGNORECASE)
 SQL_CONCAT_RE = re.compile(r'(?i)\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b.*(?:\+|concat\()')
 DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b')
