@@ -23,7 +23,8 @@ src-tauri/.cargo/
 backend/dist/
 
 # Dataset (vibe coding samples — local only, do not commit)
-dataset/
+dataset/*
+!dataset/analysis.*
 
 # RAG index (generated from dataset)
 tools/.chroma_index/

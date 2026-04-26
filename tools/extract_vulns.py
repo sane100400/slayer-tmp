@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import re
 import sys
 import time
@@ -21,6 +22,35 @@ from pathlib import Path
 
 # ── 지원 확장자 ──────────────────────────────────────────────
 SUPPORTED_EXT = {".py", ".js", ".ts", ".jsx", ".tsx", ".html"}
+DEFAULT_MAX_FILE_BYTES = 2 * 1024 * 1024
+
+SKIP_DIR_NAMES = {
+    ".git",
+    ".hg",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pycache__",
+    "__tests__",
+    "node_modules",
+    "bower_components",
+    "vendor",
+    "dist",
+    "build",
+    "coverage",
+    "doc",
+    "docs",
+    "documentation",
+    "example",
+    "examples",
+    "fixture",
+    "fixtures",
+    "sample",
+    "samples",
+    "test",
+    "tests",
+    "third_party",
+}
 
 # ═══════════════════════════════════════════════════════════
 # 웹서비스 파일 필터
@@ -401,8 +431,13 @@ def analyze_html(fp: str, src: str) -> list[dict]:
 # 파일별 디스패처
 # ═══════════════════════════════════════════════════════════
 
-def process_file(args: tuple[str, str, str]) -> dict | None:
-    fp, content, ext = args
+def process_file(args: tuple[str, str]) -> dict | None:
+    fp, ext = args
+    try:
+        content = Path(fp).read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return None
+
     if not is_web_file(fp, content, ext):
         return None
     if ext == ".py":
@@ -443,15 +478,33 @@ def _eta(elapsed: float, done: int, total: int) -> str:
 # Main
 # ═══════════════════════════════════════════════════════════
 
-def load_files(dataset_dir: Path) -> list[tuple[str, str, str]]:
-    items = []
-    for p in sorted(dataset_dir.iterdir()):
-        if p.suffix.lower() not in SUPPORTED_EXT:
-            continue
+def load_files(dataset_dir: Path, max_file_bytes: int = DEFAULT_MAX_FILE_BYTES) -> list[tuple[str, str]]:
+    items: list[tuple[str, str]] = []
+
+    if dataset_dir.is_file():
+        ext = dataset_dir.suffix.lower()
+        if ext not in SUPPORTED_EXT:
+            return []
         try:
-            items.append((str(p), p.read_text(encoding="utf-8", errors="ignore"), p.suffix.lower()))
-        except Exception:
-            pass
+            if max_file_bytes > 0 and dataset_dir.stat().st_size > max_file_bytes:
+                return []
+        except OSError:
+            return []
+        return [(str(dataset_dir), ext)]
+
+    for root, dirs, files in os.walk(dataset_dir):
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIR_NAMES)
+        for name in sorted(files):
+            p = Path(root) / name
+            ext = p.suffix.lower()
+            if ext not in SUPPORTED_EXT:
+                continue
+            try:
+                if max_file_bytes > 0 and p.stat().st_size > max_file_bytes:
+                    continue
+            except OSError:
+                continue
+            items.append((str(p), ext))
     return items
 
 
@@ -461,7 +514,14 @@ def main() -> None:
     parser.add_argument("--output",  type=Path, default=Path(__file__).parent.parent / "dataset" / "vulns.jsonl")
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--top",     type=int, default=7, help="상위 N개 룰 출력 (기본 7)")
+    parser.add_argument(
+        "--max-file-mb",
+        type=float,
+        default=2.0,
+        help="분석할 단일 파일 최대 크기 MB (기본 2.0, 0 이하면 제한 없음)",
+    )
     args = parser.parse_args()
+    max_file_bytes = 0 if args.max_file_mb <= 0 else int(args.max_file_mb * 1024 * 1024)
 
     print(f"{'='*60}")
     print(f"  SLAyer 취약점 추출기")
@@ -469,10 +529,11 @@ def main() -> None:
     print(f"  dataset : {args.dataset}")
     print(f"  output  : {args.output}")
     print(f"  workers : {args.workers}")
+    print(f"  max file: {'unlimited' if max_file_bytes <= 0 else f'{args.max_file_mb:g} MB'}")
 
-    files = load_files(args.dataset)
+    files = load_files(args.dataset, max_file_bytes=max_file_bytes)
     by_ext: dict[str, int] = {}
-    for _, _, ext in files:
+    for _, ext in files:
         by_ext[ext] = by_ext.get(ext, 0) + 1
     print(f"\n  파일 수 : {len(files):,}개  →  " + "  ".join(f"{e}:{n}" for e, n in sorted(by_ext.items())))
     print(f"{'='*60}\n")
