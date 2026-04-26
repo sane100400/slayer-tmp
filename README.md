@@ -19,9 +19,6 @@ slayer start demo_vuln.py   # rescan → clean
 2. `slayer patch` calls your locally installed Claude Code / Codex / Gemini CLI to fix them.
 3. SLAyer validates the patch syntax, rescans, and confirms deployment readiness.
 
-> **Note:** This repo also contains an experimental desktop/web prototype (`src-tauri/`, `src/`).  
-> The hackathon submission focuses on the CLI workflow in `slayer/`.
-
 ---
 
 No API key required. Patching works if Claude Code / Codex / Gemini is already installed locally.  
