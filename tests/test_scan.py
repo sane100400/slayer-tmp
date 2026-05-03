@@ -89,6 +89,20 @@ def test_start_json_output_and_exit_code(tmp_path):
     assert payload['violations'][0]['rule_name'] == 'NO_HARDCODED_SECRETS'
 
 
+
+
+def test_start_json_output_redacts_code_snippet(tmp_path):
+    vulnerable = tmp_path / 'vulnerable.py'
+    vulnerable.write_text('API_KEY = "sk-ABCDEFGHIJKLMNOPQRSTUV1234567890"\n', encoding='utf-8')
+
+    result = runner.invoke(app, ['start', str(vulnerable), '--format', 'json'])
+    payload = json.loads(result.stdout)
+
+    snippet = payload['violations'][0]['code_snippet']
+    assert 'ABCDEFGHIJKLMNOPQRSTUV1234567890' not in snippet
+    assert 'sk-A...7890' in snippet
+
+
 def test_start_handles_syntax_error_without_crashing(tmp_path):
     broken = tmp_path / 'broken.py'
     broken.write_text('def nope(:\n    pass\n', encoding='utf-8')
