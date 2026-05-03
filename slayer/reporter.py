@@ -22,8 +22,24 @@ _SEVERITY_CONF: dict[str, tuple[str, str, str]] = {
 }
 
 
+def _redact_payload(data):
+    if isinstance(data, dict):
+        redacted: dict = {}
+        for key, value in data.items():
+            if key == 'code_snippet' and isinstance(value, str):
+                redacted[key] = redact_secrets(value)
+            elif key == 'diffs' and isinstance(value, dict):
+                redacted[key] = {k: redact_secrets(v) if isinstance(v, str) else _redact_payload(v) for k, v in value.items()}
+            else:
+                redacted[key] = _redact_payload(value)
+        return redacted
+    if isinstance(data, list):
+        return [_redact_payload(item) for item in data]
+    return data
+
+
 def render_json(payload: ScanResult | PatchResult) -> str:
-    return json.dumps(payload.model_dump(), ensure_ascii=False, indent=2) + '\n'
+    return json.dumps(_redact_payload(payload.model_dump()), ensure_ascii=False, indent=2) + '\n'
 
 
 def _severity_of(rule_id: str) -> str:
@@ -132,13 +148,13 @@ def _print_diff(diff: str, console: Console) -> None:
         if line.startswith('@@'):
             console.print(Padding(Text(line, style='cyan dim'), (0, 6)))
         elif line.startswith('-'):
-            t = Text(f'  {line}', style='red', no_wrap=True)
+            t = Text(f'  -{redact_secrets(line[1:])}', style='red', no_wrap=True)
             console.print(Padding(t, (0, 4)))
         elif line.startswith('+'):
-            t = Text(f'  {line}', style='bold green', no_wrap=True)
+            t = Text(f'  +{redact_secrets(line[1:])}', style='bold green', no_wrap=True)
             console.print(Padding(t, (0, 4)))
         else:
-            console.print(Padding(Text(f'  {line}', style='dim', no_wrap=True), (0, 4)))
+            console.print(Padding(Text(f'  {redact_secrets(line)}', style='dim', no_wrap=True), (0, 4)))
 
 
 def print_patch_rich(target: str | Path, result: PatchResult, console: Console | None = None, *, skip_diffs: bool = False) -> None:
@@ -231,7 +247,7 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
         if patched in result.diffs:
             for dl in result.diffs[patched].splitlines():
                 if not dl.startswith(('--- ', '+++ ')):
-                    lines.append(f'    {dl}')
+                    lines.append(f'    {redact_secrets(dl)}')
             lines.append('')
     if result.patch_explanations:
         lines.append('')
@@ -251,6 +267,6 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
         lines.append('Remaining violations:')
         for violation in result.remaining_violations:
             lines.append(
-                f"✗  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {violation.code_snippet.strip()}"
+                f"✗  {violation.rule_name:<22} {Path(violation.file).name}:{violation.line:<4} {redact_secrets(violation.code_snippet.strip())}"
             )
     return '\n'.join(lines) + '\n'

@@ -4,8 +4,11 @@ import json
 
 from typer.testing import CliRunner
 
+from rich.console import Console
+
 from slayer.cli import app
 from slayer.patcher.llm_patcher import patch_path
+from slayer.reporter import _print_diff
 
 runner = CliRunner()
 
@@ -142,3 +145,32 @@ def test_patch_cli_auto_uses_detection_when_configured(tmp_path, fake_ai_env, mo
 
     assert result.exit_code == 0
     assert payload['ai_used'] == 'claude'
+
+
+
+def test_patch_cli_json_redacts_diffs(tmp_path, fake_ai_env, monkeypatch):
+    target = tmp_path / 'demo.py'
+    target.write_text('API_KEY = "sk-ABCDEFGHIJKLMNOPQRSTUV1234567890"\n', encoding='utf-8')
+    monkeypatch.setenv('SLAYER_FAKE_AI_OUTPUT', 'import os\nAPI_KEY = os.environ.get("API_KEY", "")\n')
+
+    result = runner.invoke(app, ['patch', str(target), '--format', 'json'])
+    payload = json.loads(result.stdout)
+
+    diff_text = next(iter(payload['diffs'].values()))
+    assert 'ABCDEFGHIJKLMNOPQRSTUV1234567890' not in diff_text
+    assert 'sk-A...7890' in diff_text
+
+
+def test_print_diff_redacts_secret_lines():
+    diff = '\n'.join([
+        '@@ -1 +1 @@',
+        '-API_KEY = "sk-ABCDEFGHIJKLMNOPQRSTUV1234567890"',
+        '+API_KEY = os.environ.get("API_KEY", "")',
+    ])
+    console = Console(record=True)
+
+    _print_diff(diff, console)
+    rendered = console.export_text()
+
+    assert 'ABCDEFGHIJKLMNOPQRSTUV1234567890' not in rendered
+    assert 'sk-A...7890' in rendered
