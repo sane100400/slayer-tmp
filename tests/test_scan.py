@@ -5,6 +5,7 @@ import json
 from typer.testing import CliRunner
 
 from slayer.cli import app
+from slayer.analyzers.js_analyzer import analyze as analyze_js
 from slayer.scanner import scan_path
 
 runner = CliRunner()
@@ -123,3 +124,22 @@ def test_start_empty_directory_reports_no_supported_files(tmp_path):
     result = runner.invoke(app, ['start', str(tmp_path)])
     assert result.exit_code == 0
     assert 'No supported source files found' in result.stdout
+
+
+def test_js_exec_detection_handles_child_process_aliases_and_ignores_db_exec(tmp_path):
+    js_file = tmp_path / 'demo.js'
+    js_file.write_text(
+        (
+            'const cp = require("child_process");\n'
+            'cp.exec("id");\n'
+            'require("child_process").exec("id");\n'
+            'const db = getDb();\n'
+            'db.exec("SELECT 1");\n'
+        ),
+        encoding='utf-8',
+    )
+
+    violations = analyze_js(js_file, js_file.read_text(encoding='utf-8'))
+
+    no_exec_lines = sorted(v.line for v in violations if v.rule_name == 'NO_EXEC')
+    assert no_exec_lines == [2, 3]

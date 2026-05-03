@@ -18,6 +18,15 @@ PROVIDER_PATTERNS = (
 PLACEHOLDER_WORDS = {"example", "dummy", "test", "changeme", "your_api_key", "xxxxx", "sample", "placeholder"}
 NETWORK_RE = re.compile(r'\b(fetch|axios\.(?:get|post|put|delete|patch)|http\.(?:get|request)|https\.(?:get|request))\s*\(')
 EXEC_RE = re.compile(r'(?:child_process\.(?:exec|execSync|spawnSync)|(?<![.\w])(?:execSync|spawnSync|exec))\s*\(')
+CHILD_PROCESS_REQUIRE_EXEC_RE = re.compile(
+    r'require\(\s*["\']child_process["\']\s*\)\s*\.\s*(?:exec|execSync|spawnSync)\s*\('
+)
+CHILD_PROCESS_ALIAS_RE = re.compile(
+    r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(\s*["\']child_process["\']\s*\)'
+)
+CHILD_PROCESS_IMPORT_RE = re.compile(
+    r'import\s+(?:\*\s+as\s+)?([A-Za-z_$][\w$]*)\s+from\s+["\']child_process["\']'
+)
 SQL_TEMPLATE_RE = re.compile(r'`[^`]*\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b[^`]*\$\{', re.IGNORECASE)
 SQL_CONCAT_RE = re.compile(r'(?i)\b(SELECT|INSERT|UPDATE|DELETE|DROP)\b.*(?:\+|concat\()')
 DEBUG_RE = re.compile(r'(?i)\bdebug\s*:\s*true\b|\bDEBUG\s*=\s*true\b')
@@ -74,6 +83,21 @@ def _line_number(source: str, index: int) -> int:
 def analyze(path: Path, source: str) -> list[Violation]:
     lines = source.splitlines()
     violations: list[Violation] = []
+    child_process_aliases = {'child_process'}
+
+    for line in lines:
+        alias_match = CHILD_PROCESS_ALIAS_RE.search(line)
+        if alias_match:
+            child_process_aliases.add(alias_match.group(1))
+
+        import_match = CHILD_PROCESS_IMPORT_RE.search(line)
+        if import_match:
+            child_process_aliases.add(import_match.group(1))
+
+    child_process_alias_names = '|'.join(re.escape(name) for name in sorted(child_process_aliases))
+    child_process_member_exec_re = re.compile(
+        rf'\b(?:{child_process_alias_names})\s*\.\s*(?:exec|execSync|spawnSync)\s*\('
+    )
 
     for lineno, line in enumerate(lines, 1):
         match = SECRET_ASSIGN_RE.search(line)
@@ -95,7 +119,7 @@ def analyze(path: Path, source: str) -> list[Violation]:
             if any(indicator in first_arg for indicator in _SSRF_INDICATORS):
                 violations.append(_violation('NO_NETWORK', path, lineno, lines))
 
-        if EXEC_RE.search(line):
+        if EXEC_RE.search(line) or CHILD_PROCESS_REQUIRE_EXEC_RE.search(line) or child_process_member_exec_re.search(line):
             violations.append(_violation('NO_EXEC', path, lineno, lines))
 
         if SQL_TEMPLATE_RE.search(line) or SQL_CONCAT_RE.search(line):
