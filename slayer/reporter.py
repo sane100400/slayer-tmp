@@ -129,6 +129,7 @@ def _print_diff(diff: str, console: Console) -> None:
     for line in diff.splitlines():
         if line.startswith(('--- ', '+++ ')):
             continue
+        line = redact_secrets(line)
         if line.startswith('@@'):
             console.print(Padding(Text(line, style='cyan dim'), (0, 6)))
         elif line.startswith('-'):
@@ -231,7 +232,7 @@ def render_patch_text(target: str | Path, result: PatchResult) -> str:
         if patched in result.diffs:
             for dl in result.diffs[patched].splitlines():
                 if not dl.startswith(('--- ', '+++ ')):
-                    lines.append(f'    {dl}')
+                    lines.append(f'    {redact_secrets(dl)}')
             lines.append('')
     if result.patch_explanations:
         lines.append('')
